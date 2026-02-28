@@ -42,5 +42,6 @@
       "source": "/api/:path*",
       "destination": "/api/:path*"
     }
-  ]
+  ],
+  "outputDirectory": "widget/dist"
 }
