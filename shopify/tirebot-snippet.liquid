@@ -1,0 +1,55 @@
+{% comment %}
+  TireBot Chat Widget — GCI Tires
+  ================================
+  INSTALLATION:
+  1. In Shopify Admin → Online Store → Themes → Edit code
+  2. Open layout/theme.liquid
+  3. Paste this snippet just before the closing </body> tag:
+     {% render 'tirebot-snippet' %}
+  4. Or add this file as snippets/tirebot-snippet.liquid and render it.
+
+  REQUIRED: Set your Vercel deployment URL in the script src below.
+{% endcomment %}
+
+{%- comment -%}
+  ── Step 1: Expose Shopify customer context to the widget ──
+  This allows TireBot to personalize conversations for logged-in customers.
+{%- endcomment -%}
+<script>
+  window.GCICustomer = {
+    id: "{{ customer.id | escape }}",
+    email: "{{ customer.email | escape }}",
+    name: "{{ customer.first_name | escape }}",
+    isLoggedIn: {{ customer != blank }}
+  };
+</script>
+
+{%- comment -%}
+  ── Step 2: Load and initialize the TireBot widget bundle ──
+  Replace YOUR_VERCEL_DEPLOYMENT_URL with your actual Vercel project URL.
+  Example: https://gcitires-chatbot.vercel.app
+{%- endcomment -%}
+<script
+  src="https://YOUR_VERCEL_DEPLOYMENT_URL/tirebot-widget.iife.js"
+  defer
+  crossorigin="anonymous"
+  data-api-endpoint="https://YOUR_VERCEL_DEPLOYMENT_URL"
+  data-store-domain="{{ shop.permanent_domain | escape }}"
+></script>
+
+{%- comment -%}
+  ── Optional: Manual initialization (use instead of data attributes above) ──
+  Uncomment this block if you need to control when the widget initializes,
+  e.g., only on certain pages or after user consent.
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.GCITiresWidget) {
+        window.GCITiresWidget.init({
+          apiEndpoint: 'https://YOUR_VERCEL_DEPLOYMENT_URL',
+          storeDomain: '{{ shop.permanent_domain | escape }}'
+        });
+      }
+    });
+  </script>
+{%- endcomment -%}

@@ -1,0 +1,25 @@
+{
+  "name": "gcitires-chatbot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bilingual AI chatbot for GCI Tires — Vercel serverless backend",
+  "engines": {
+    "node": "18.x"
+  },
+  "scripts": {
+    "dev": "vercel dev",
+    "build:widget": "cd widget && npm run build",
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.27.3",
+    "airtable": "^0.12.2",
+    "franc-min": "^6.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@vercel/node": "^3.0.0",
+    "typescript": "^5.3.3"
+  }
+}
