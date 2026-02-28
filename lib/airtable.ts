@@ -119,11 +119,11 @@ export async function upsertCustomer(
       if (!('total_sessions' in fields)) {
         fields.total_sessions = (existing.total_sessions || 0) + 1;
       }
-      await base(CUSTOMERS_TABLE).update(existing.airtableId, fields);
+      await base(CUSTOMERS_TABLE).update(existing.airtableId, fields as any);
     } else {
       fields.customer_id = data.customer_id;
       fields.total_sessions = 1;
-      await base(CUSTOMERS_TABLE).create([{ fields }]);
+      await base(CUSTOMERS_TABLE).create([{ fields } as any]);
     }
   } catch (err: unknown) {
     if (isRateLimitError(err)) {
