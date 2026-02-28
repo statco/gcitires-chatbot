@@ -4,7 +4,7 @@
   "private": true,
   "description": "Bilingual AI chatbot for GCI Tires — Vercel serverless backend",
   "engines": {
-    "node": "18.x"
+    "node": "24.x"
   },
   "scripts": {
     "dev": "vercel dev",
