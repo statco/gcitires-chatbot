@@ -10,7 +10,8 @@
     "dev": "vercel dev",
     "build:widget": "cd widget && npm run build",
     "lint": "tsc --noEmit",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "cd widget && npm install && npm run build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.3",
