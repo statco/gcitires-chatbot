@@ -687,3 +687,11 @@
 #gci-tirebot-root .gci-message--user {
   padding-right: 4px;
 }
+
+/* ===== RIGHT EDGE BUBBLE FIX ===== */
+#gci-tirebot-root .gci-widget-container {
+  right: 20px;
+}
+#gci-tirebot-root .gci-message--user .gci-bubble--user {
+  margin-right: 2px;
+}
