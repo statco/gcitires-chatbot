@@ -613,3 +613,48 @@
     color: #ffd54f;
   }
 }
+
+/* ===== FORCE LIGHT MODE — override dark theme interference ===== */
+@media (prefers-color-scheme: dark) {
+  #gci-tirebot-root {
+    --gci-grey-50: #f8f9fa !important;
+    --gci-grey-100: #f1f3f4 !important;
+    --gci-grey-200: #e9ecef !important;
+    --gci-grey-300: #dee2e6 !important;
+    --gci-grey-500: #adb5bd !important;
+    --gci-grey-700: #495057 !important;
+    --gci-grey-900: #212529 !important;
+    --gci-white: #ffffff !important;
+  }
+
+  .gci-bubble--assistant {
+    background: #ffffff !important;
+    border-color: #e9ecef !important;
+    color: #212529 !important;
+  }
+
+  .gci-input {
+    background: #f8f9fa !important;
+    color: #212529 !important;
+    border-color: #dee2e6 !important;
+  }
+
+  .gci-input:focus {
+    background: #ffffff !important;
+  }
+
+  .gci-offline-banner {
+    background: #fef3cd !important;
+    border-color: #ffc107 !important;
+    color: #856404 !important;
+  }
+}
+
+/* ===== VIEWPORT SAFETY — never overflow screen ===== */
+.gci-widget-container {
+  max-height: calc(100vh - 100px);
+}
+
+.gci-window {
+  max-height: calc(100vh - 100px);
+}
