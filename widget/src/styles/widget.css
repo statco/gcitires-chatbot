@@ -658,3 +658,21 @@
 .gci-window {
   max-height: calc(100vh - 100px);
 }
+
+/* ===== NUCLEAR OVERRIDE — force white container always ===== */
+#gci-tirebot-root .gci-window {
+  background: #ffffff !important;
+  color: #212529 !important;
+}
+
+#gci-tirebot-root .gci-messages {
+  background: #f8f9fa !important;
+}
+
+#gci-tirebot-root .gci-input-area {
+  background: #ffffff !important;
+}
+
+#gci-tirebot-root .gci-footer {
+  background: #ffffff !important;
+}
