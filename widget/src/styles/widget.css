@@ -676,3 +676,14 @@
 #gci-tirebot-root .gci-footer {
   background: #ffffff !important;
 }
+
+/* ===== USER BUBBLE OVERFLOW FIX ===== */
+#gci-tirebot-root .gci-bubble--user {
+  max-width: 100%;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+#gci-tirebot-root .gci-message--user {
+  padding-right: 4px;
+}
