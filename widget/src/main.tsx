@@ -50,7 +50,9 @@ function autoInit(): void {
     scriptEl?.dataset.storeDomain || 'gcitires.myshopify.com';
 
   if (endpoint) {
-    mountWidget({ apiEndpoint: endpoint, storeDomain: domain, initialLanguage: getInitialLanguage() });
+    const initialLang = getInitialLanguage();
+    console.log('[TireBot] html lang:', document.documentElement.lang, '| detected:', initialLang);
+    mountWidget({ apiEndpoint: endpoint, storeDomain: domain, initialLanguage: initialLang });
   }
 }
 
