@@ -14,7 +14,7 @@ export default function ChatWidget({ config }: ChatWidgetProps) {
   const [hasUnread, setHasUnread] = useState(false);
 
   const customer = useCustomer();
-  const { language, toggleLanguage, setLanguage } = useLanguage();
+  const { language, toggleLanguage, setLanguage } = useLanguage(config.initialLanguage);
 
   const { messages, isLoading, isOffline, sendMessage } = useChat(
     config,

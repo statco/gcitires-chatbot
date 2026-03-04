@@ -1,11 +1,21 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import ChatWidget from './components/ChatWidget';
-import type { WidgetConfig } from './types';
+import type { Language, WidgetConfig } from './types';
 
 // Inject CSS at runtime into a shadow DOM or <head>
 // This is necessary for single-bundle IIFE embed in Shopify
 import './styles/widget.css';
+
+/** Read the Shopify store locale from the page so the welcome message
+ *  renders in the correct language before any user interaction. */
+function getInitialLanguage(): Language {
+  const lang =
+    document.documentElement.lang ||
+    document.querySelector('meta[name="language"]')?.getAttribute('content') ||
+    '';
+  return lang.toLowerCase().startsWith('fr') ? 'FR' : 'EN';
+}
 
 function mountWidget(config: WidgetConfig): void {
   // Prevent double-mount
@@ -40,7 +50,7 @@ function autoInit(): void {
     scriptEl?.dataset.storeDomain || 'gcitires.myshopify.com';
 
   if (endpoint) {
-    mountWidget({ apiEndpoint: endpoint, storeDomain: domain });
+    mountWidget({ apiEndpoint: endpoint, storeDomain: domain, initialLanguage: getInitialLanguage() });
   }
 }
 
