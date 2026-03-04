@@ -5,7 +5,7 @@ import type { Language } from '../types';
  * Simple client-side French language detector.
  * No external dependencies — keeps the widget bundle small.
  */
-function detectLanguageLocal(text: string): Language {
+export function detectLanguageLocal(text: string): Language {
   const lower = text.toLowerCase();
 
   // Strong French indicators
