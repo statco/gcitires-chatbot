@@ -5,7 +5,7 @@ import { streamChatMessage, syncCustomerSession } from '../lib/api';
 import { detectLanguageLocal } from './useLanguage';
 import { DEFAULT_QUICK_REPLIES, I18N } from '../types';
 
-const SESSION_STORAGE_KEY = 'gci-chat-messages-v2';
+const getSessionKey = (lang: Language) => `gci-chat-messages-v2-${lang}`;
 const SESSION_ID_KEY = 'gci-session-id';
 
 function generateSessionId(): string {
@@ -18,9 +18,9 @@ function generateMessageId(): string {
   return `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 }
 
-function loadSessionMessages(): ChatMessage[] {
+function loadSessionMessages(lang: Language): ChatMessage[] {
   try {
-    const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    const raw = sessionStorage.getItem(getSessionKey(lang));
     if (!raw) return [];
     return JSON.parse(raw) as ChatMessage[];
   } catch {
@@ -28,11 +28,11 @@ function loadSessionMessages(): ChatMessage[] {
   }
 }
 
-function saveSessionMessages(messages: ChatMessage[]): void {
+function saveSessionMessages(messages: ChatMessage[], lang: Language): void {
   try {
     // Keep last 50 messages to stay within sessionStorage limits
     const toSave = messages.slice(-50);
-    sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(toSave));
+    sessionStorage.setItem(getSessionKey(lang), JSON.stringify(toSave));
   } catch {
     // ignore quota errors
   }
@@ -67,7 +67,7 @@ export function useChat(
   initialLanguage?: Language
 ): UseChatReturn {
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    const saved = loadSessionMessages();
+    const saved = loadSessionMessages(initialLanguage ?? language);
     if (saved.length > 0) return saved;
 
     // Show welcome message on first load
@@ -88,7 +88,7 @@ export function useChat(
 
   // Persist messages to sessionStorage on every change
   useEffect(() => {
-    saveSessionMessages(messages);
+    saveSessionMessages(messages, initialLanguage ?? language);
   }, [messages]);
 
   // Sync customer session to Airtable on mount
@@ -220,7 +220,7 @@ export function useChat(
     };
     setMessages([welcome]);
     try {
-      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      sessionStorage.removeItem(getSessionKey(initialLanguage ?? language));
     } catch {
       // ignore
     }
