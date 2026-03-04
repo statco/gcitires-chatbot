@@ -5,7 +5,7 @@ import { streamChatMessage, syncCustomerSession } from '../lib/api';
 import { detectLanguageLocal } from './useLanguage';
 import { DEFAULT_QUICK_REPLIES, I18N } from '../types';
 
-const SESSION_STORAGE_KEY = 'gci-chat-messages';
+const SESSION_STORAGE_KEY = 'gci-chat-messages-v2';
 const SESSION_ID_KEY = 'gci-session-id';
 
 function generateSessionId(): string {
