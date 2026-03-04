@@ -142,6 +142,9 @@ export default function ChatWindow({
         <div ref={messagesEndRef} aria-hidden="true" />
       </div>
 
+      {/* Prompt nudge */}
+      <div className="gci-input-prompt">{strings.inputPrompt}</div>
+
       {/* Input area */}
       <div className="gci-input-area">
         <textarea
