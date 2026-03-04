@@ -27,6 +27,7 @@ export interface WidgetConfig {
 export interface I18nStrings {
   title: string;
   placeholder: string;
+  inputPrompt: string;
   send: string;
   typing: string;
   offline: string;
@@ -34,6 +35,8 @@ export interface I18nStrings {
   toggleLang: string;
   minimize: string;
   errorMessage: string;
+  greetingIntro: string;
+  greetingBody: string;
   welcomeEN: string;
   welcomeFR: string;
 }
@@ -42,6 +45,7 @@ export const I18N: Record<Language, I18nStrings> = {
   EN: {
     title: 'TireBot',
     placeholder: 'Ask about tires, orders, or your vehicle...',
+    inputPrompt: 'Or type your question below...',
     send: 'Send',
     typing: 'TireBot is typing...',
     offline:
@@ -51,6 +55,9 @@ export const I18N: Record<Language, I18nStrings> = {
     minimize: 'Minimize',
     errorMessage:
       'Sorry, something went wrong. Please try again in a moment.',
+    greetingIntro: "Hi! I'm TireBot 🤖, your GCI Tires assistant.",
+    greetingBody:
+      'I can help you find the right tires, track your order, or answer any questions. How can I help you today?',
     welcomeEN:
       "Hi! I'm TireBot 🤖, your GCI Tires assistant. I can help you find the right tires, track your order, or answer any questions. How can I help you today?",
     welcomeFR:
@@ -59,6 +66,7 @@ export const I18N: Record<Language, I18nStrings> = {
   FR: {
     title: 'TireBot',
     placeholder: 'Posez une question sur les pneus, commandes ou votre véhicule...',
+    inputPrompt: 'Ou posez votre question ci-dessous...',
     send: 'Envoyer',
     typing: 'TireBot est en train d\'écrire...',
     offline:
@@ -68,6 +76,9 @@ export const I18N: Record<Language, I18nStrings> = {
     minimize: 'Réduire',
     errorMessage:
       'Désolé, une erreur s\'est produite. Veuillez réessayer dans un moment.',
+    greetingIntro: 'Bonjour! Je suis TireBot 🤖, votre assistant GCI Pneus.',
+    greetingBody:
+      'Je peux vous aider à trouver les bons pneus, suivre votre commande ou répondre à vos questions. Comment puis-je vous aider?',
     welcomeEN:
       "Hi! I'm TireBot 🤖, your GCI Tires assistant. I can help you find the right tires, track your order, or answer any questions. How can I help you today?",
     welcomeFR:

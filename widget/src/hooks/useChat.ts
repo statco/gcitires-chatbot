@@ -70,26 +70,49 @@ export function useChat(
     const saved = loadSessionMessages(initialLanguage ?? language);
     if (saved.length > 0) return saved;
 
-    // Show welcome message on first load
-    const welcomeMsg: ChatMessage = {
+    // First bubble of two-part greeting (second arrives after 600ms via useEffect)
+    const lang = initialLanguage ?? language;
+    const firstBubble: ChatMessage = {
       id: generateMessageId(),
       role: 'assistant',
-      content: (initialLanguage ?? language) === 'FR' ? I18N.FR.welcomeFR : I18N.EN.welcomeEN,
+      content: I18N[lang].greetingIntro,
       timestamp: Date.now(),
-      quickReplies: DEFAULT_QUICK_REPLIES[language],
     };
-    return [welcomeMsg];
+    return [firstBubble];
   });
 
   const [isLoading, setIsLoading] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const sessionId = useRef(getOrCreateSessionId()).current;
   const abortRef = useRef<AbortController | null>(null);
+  const greetingFiredRef = useRef(false);
 
   // Persist messages to sessionStorage on every change
   useEffect(() => {
     saveSessionMessages(messages, initialLanguage ?? language);
   }, [messages]);
+
+  // Deliver second greeting bubble 600ms after mount (fresh sessions only)
+  useEffect(() => {
+    if (greetingFiredRef.current) return;
+    // Only fire when we have exactly the single intro bubble
+    if (messages.length !== 1 || messages[0].role !== 'assistant') return;
+    greetingFiredRef.current = true;
+
+    const lang = initialLanguage ?? language;
+    const timer = setTimeout(() => {
+      const secondBubble: ChatMessage = {
+        id: generateMessageId(),
+        role: 'assistant',
+        content: I18N[lang].greetingBody,
+        timestamp: Date.now(),
+        quickReplies: DEFAULT_QUICK_REPLIES[lang],
+      };
+      setMessages((prev) => [...prev, secondBubble]);
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync customer session to Airtable on mount
   useEffect(() => {
