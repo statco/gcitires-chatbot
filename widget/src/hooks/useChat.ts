@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import type { ChatMessage, Language, CustomerInfo } from '../types';
 import type { WidgetConfig } from '../types';
 import { streamChatMessage, syncCustomerSession } from '../lib/api';
+import { detectLanguageLocal } from './useLanguage';
 import { DEFAULT_QUICK_REPLIES, I18N } from '../types';
 
 const SESSION_STORAGE_KEY = 'gci-chat-messages';
@@ -109,18 +110,14 @@ export function useChat(
       const abortController = new AbortController();
       abortRef.current = abortController;
 
-      // Detect language from user's first substantive message
-      if (messages.filter((m) => m.role === 'user').length === 0 && onLanguageDetected) {
-        const { detectLanguageLocal } = await import('./useLanguage').then(
-          (m) => ({ detectLanguageLocal: m['useLanguage'] })
-        ).catch(() => ({ detectLanguageLocal: null }));
-        void detectLanguageLocal; // unused import guard
-        // Simple inline detection for first message
-        const lower = text.toLowerCase();
-        const frPatterns = [/\bbonjour\b/, /\bpneus?\b/, /[àâäéèêëîïôùûüç]/, /\bje\b/, /\bmerci\b/];
-        if (frPatterns.some((p) => p.test(lower))) {
-          onLanguageDetected('FR');
-        }
+      // Synchronously detect language from the current message text so the
+      // API call uses the correct language even on the very first send.
+      const detectedLang = text.trim().length >= 5 ? detectLanguageLocal(text) : null;
+      const effectiveLang = detectedLang ?? language;
+
+      // Notify parent immediately so the UI switches before the response arrives.
+      if (detectedLang && detectedLang !== language && onLanguageDetected) {
+        onLanguageDetected(effectiveLang);
       }
 
       // Add user message
@@ -156,7 +153,7 @@ export function useChat(
           messages: historyForApi,
           customerId: customer.id,
           sessionId,
-          language,
+          language: effectiveLang,
           signal: abortController.signal,
 
           onChunk(chunk) {
