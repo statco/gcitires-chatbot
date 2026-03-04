@@ -221,6 +221,7 @@
 /* ===== Messages Area ===== */
 .gci-messages {
   flex: 1;
+  min-height: 0; /* Critical: lets flex child shrink so overflow-y:auto actually scrolls */
   overflow-y: auto;
   padding: 16px;
   display: flex;
