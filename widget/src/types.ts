@@ -21,6 +21,7 @@ export interface CustomerInfo {
 export interface WidgetConfig {
   apiEndpoint: string;
   storeDomain: string;
+  initialLanguage?: Language;
 }
 
 export interface I18nStrings {

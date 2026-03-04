@@ -51,7 +51,7 @@ interface UseLanguageReturn {
   detectFromText: (text: string) => Language;
 }
 
-export function useLanguage(initial: Language = 'EN'): UseLanguageReturn {
+export function useLanguage(initialLanguage: Language = 'EN'): UseLanguageReturn {
   const [language, setLanguageState] = useState<Language>(() => {
     // Check if customer has a stored preference
     try {
@@ -60,7 +60,7 @@ export function useLanguage(initial: Language = 'EN'): UseLanguageReturn {
     } catch {
       // ignore
     }
-    return initial;
+    return initialLanguage;
   });
 
   const setLanguage = useCallback((lang: Language) => {
