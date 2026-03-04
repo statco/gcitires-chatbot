@@ -30,12 +30,29 @@ export default function ChatWindow({
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Small delay lets keyboard finish animating before scrolling
+    const timer = setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 100);
+    return () => clearTimeout(timer);
   }, [messages, isLoading]);
 
   // Focus input on open
   useEffect(() => {
     inputRef.current?.focus();
+  }, []);
+
+  // Scroll to bottom when input is focused on mobile (keyboard opens)
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    const handleFocus = () => {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }, 350);
+    };
+    input.addEventListener('focus', handleFocus);
+    return () => input.removeEventListener('focus', handleFocus);
   }, []);
 
   const handleSend = useCallback(() => {
