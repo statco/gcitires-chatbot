@@ -20,7 +20,8 @@ export default function ChatWidget({ config }: ChatWidgetProps) {
     config,
     customer,
     language,
-    setLanguage // auto-switch language when detected from user input
+    setLanguage, // auto-switch language when detected from user input
+    config.initialLanguage
   );
 
   const handleOpen = useCallback(() => {

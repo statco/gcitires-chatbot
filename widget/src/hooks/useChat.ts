@@ -63,7 +63,8 @@ export function useChat(
   config: WidgetConfig,
   customer: CustomerInfo,
   language: Language,
-  onLanguageDetected?: (lang: Language) => void
+  onLanguageDetected?: (lang: Language) => void,
+  initialLanguage?: Language
 ): UseChatReturn {
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     const saved = loadSessionMessages();
@@ -73,7 +74,7 @@ export function useChat(
     const welcomeMsg: ChatMessage = {
       id: generateMessageId(),
       role: 'assistant',
-      content: language === 'FR' ? I18N.FR.welcomeFR : I18N.EN.welcomeEN,
+      content: (initialLanguage ?? language) === 'FR' ? I18N.FR.welcomeFR : I18N.EN.welcomeEN,
       timestamp: Date.now(),
       quickReplies: DEFAULT_QUICK_REPLIES[language],
     };
