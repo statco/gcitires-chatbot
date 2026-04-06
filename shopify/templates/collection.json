@@ -4,6 +4,10 @@
       "type": "ymm-finder",
       "settings": {}
     },
+    "oos_filter": {
+      "type": "oos-filter",
+      "settings": {}
+    },
     "banner": {
       "type": "main-collection-banner",
       "settings": {}
@@ -29,5 +33,5 @@
       }
     }
   },
-  "order": ["ymm_finder", "banner", "product_grid"]
+  "order": ["ymm_finder", "oos_filter", "banner", "product_grid"]
 }
