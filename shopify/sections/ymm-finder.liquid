@@ -1,0 +1,294 @@
+{% comment %}
+  YMM Tire Finder — GCI Tires
+  ════════════════════════════════════════════════════════════════
+  INSTALLATION:
+  1. Copy this file to your theme's sections/ folder.
+  2. Add the section to templates/collection.json and templates/index.json
+     (see shopify/templates/ in this repo for reference JSON).
+
+  BEHAVIOUR:
+  On submit, redirects to https://match.gcitires.com?year=…&make=…&model=…
+  ════════════════════════════════════════════════════════════════
+{% endcomment %}
+
+<div class="ymm-finder" id="ymm-finder">
+  <div class="ymm-finder__inner page-width">
+
+    <h2 class="ymm-finder__heading">Find Tires for Your Vehicle</h2>
+
+    <form class="ymm-finder__form" id="ymm-finder-form" novalidate>
+      <div class="ymm-finder__fields">
+
+        <div class="ymm-finder__field">
+          <label class="ymm-finder__label" for="ymm-year">Year</label>
+          <select class="ymm-finder__select" id="ymm-year" name="year" required>
+            <option value="" disabled selected>Select year</option>
+          </select>
+        </div>
+
+        <div class="ymm-finder__field">
+          <label class="ymm-finder__label" for="ymm-make">Make</label>
+          <select class="ymm-finder__select" id="ymm-make" name="make" required>
+            <option value="" disabled selected>Select make</option>
+          </select>
+        </div>
+
+        <div class="ymm-finder__field">
+          <label class="ymm-finder__label" for="ymm-model">Model</label>
+          <input
+            class="ymm-finder__input"
+            id="ymm-model"
+            name="model"
+            type="text"
+            placeholder="e.g. Civic, F-150, RAV4…"
+            autocomplete="off"
+            required
+          />
+        </div>
+
+        <div class="ymm-finder__field ymm-finder__field--cta">
+          <button class="ymm-finder__button" type="submit">
+            Find My Tires
+          </button>
+        </div>
+
+      </div><!-- /.ymm-finder__fields -->
+
+      <p class="ymm-finder__error" id="ymm-error" aria-live="polite" hidden>
+        Please select a year, make, and enter a model.
+      </p>
+    </form>
+
+  </div><!-- /.ymm-finder__inner -->
+</div><!-- /.ymm-finder -->
+
+{% style %}
+  .ymm-finder {
+    background: #0E0E0E;
+    padding: 48px 0;
+  }
+
+  .ymm-finder__inner {
+    /* page-width utility from Dawn sets max-width + horizontal padding */
+  }
+
+  .ymm-finder__heading {
+    color: #ffffff;
+    font-size: clamp(1.375rem, 3vw, 2rem);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    margin: 0 0 28px;
+    line-height: 1.2;
+  }
+
+  .ymm-finder__fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: flex-end;
+  }
+
+  /* Year, Make, Model each take equal space; CTA auto-sizes */
+  .ymm-finder__field {
+    flex: 1 1 170px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+  }
+
+  .ymm-finder__field--cta {
+    flex: 0 1 auto;
+  }
+
+  .ymm-finder__label {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .ymm-finder__select,
+  .ymm-finder__input {
+    background: #161616;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 4px;
+    color: #ffffff;
+    font-size: 0.9375rem;
+    height: 46px;
+    padding: 0 14px;
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    transition: border-color 0.15s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='rgba(255,255,255,0.4)' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+  }
+
+  /* Input doesn't need the chevron */
+  .ymm-finder__input {
+    background-image: none;
+    padding-right: 14px;
+  }
+
+  .ymm-finder__input::placeholder {
+    color: rgba(255, 255, 255, 0.28);
+  }
+
+  .ymm-finder__select option {
+    background: #1a1a1a;
+    color: #ffffff;
+  }
+
+  .ymm-finder__select:focus,
+  .ymm-finder__input:focus {
+    border-color: #B8192E;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(184, 25, 46, 0.25);
+  }
+
+  .ymm-finder__select.ymm--invalid,
+  .ymm-finder__input.ymm--invalid {
+    border-color: #B8192E;
+  }
+
+  .ymm-finder__button {
+    background: #B8192E;
+    border: none;
+    border-radius: 4px;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    height: 46px;
+    letter-spacing: 0.03em;
+    padding: 0 32px;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+
+  .ymm-finder__button:hover,
+  .ymm-finder__button:focus-visible {
+    background: #9c1425;
+  }
+
+  .ymm-finder__button:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+  }
+
+  .ymm-finder__error {
+    color: #ff8080;
+    font-size: 0.85rem;
+    margin: 12px 0 0;
+  }
+
+  /* ── Mobile: stack fields vertically, button goes full width ── */
+  @media (max-width: 749px) {
+    .ymm-finder {
+      padding: 36px 0;
+    }
+
+    .ymm-finder__fields {
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .ymm-finder__field,
+    .ymm-finder__field--cta {
+      flex: 1 1 100%;
+      width: 100%;
+    }
+
+    .ymm-finder__button {
+      width: 100%;
+    }
+  }
+{% endstyle %}
+
+<script>
+  (function () {
+    'use strict';
+
+    var MAKES = [
+      'Acura','Audi','BMW','Buick','Cadillac','Chevrolet','Chrysler',
+      'Dodge','Ford','GMC','Honda','Hyundai','Infiniti','Jeep','Kia',
+      'Lexus','Lincoln','Mazda','Mercedes-Benz','Mitsubishi','Nissan',
+      'RAM','Subaru','Tesla','Toyota','Volkswagen','Volvo'
+    ];
+
+    var CURRENT_YEAR = 2026;
+    var START_YEAR   = 2000;
+
+    // ── Populate Year dropdown (newest first) ──────────────────
+    var yearSel = document.getElementById('ymm-year');
+    for (var y = CURRENT_YEAR; y >= START_YEAR; y--) {
+      var yOpt = document.createElement('option');
+      yOpt.value       = y;
+      yOpt.textContent = y;
+      yearSel.appendChild(yOpt);
+    }
+
+    // ── Populate Make dropdown ─────────────────────────────────
+    var makeSel = document.getElementById('ymm-make');
+    MAKES.forEach(function (make) {
+      var mOpt = document.createElement('option');
+      mOpt.value       = make;
+      mOpt.textContent = make;
+      makeSel.appendChild(mOpt);
+    });
+
+    // ── Form submission → redirect to match.gcitires.com ──────
+    var form     = document.getElementById('ymm-finder-form');
+    var modelInp = document.getElementById('ymm-model');
+    var errorEl  = document.getElementById('ymm-error');
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      var year  = yearSel.value;
+      var make  = makeSel.value;
+      var model = modelInp.value.trim();
+
+      // Clear previous validation state
+      [yearSel, makeSel, modelInp].forEach(function (el) {
+        el.classList.remove('ymm--invalid');
+      });
+      errorEl.hidden = true;
+
+      // Basic validation
+      var valid = true;
+      if (!year)  { yearSel.classList.add('ymm--invalid');  valid = false; }
+      if (!make)  { makeSel.classList.add('ymm--invalid');  valid = false; }
+      if (!model) { modelInp.classList.add('ymm--invalid'); valid = false; }
+
+      if (!valid) {
+        errorEl.hidden = false;
+        return;
+      }
+
+      window.location.href =
+        'https://match.gcitires.com' +
+        '?year='  + encodeURIComponent(year)  +
+        '&make='  + encodeURIComponent(make)  +
+        '&model=' + encodeURIComponent(model);
+    });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "YMM Tire Finder",
+  "tag": "section",
+  "class": "section-ymm-finder",
+  "settings": [],
+  "presets": [
+    {
+      "name": "YMM Tire Finder"
+    }
+  ]
+}
+{% endschema %}
