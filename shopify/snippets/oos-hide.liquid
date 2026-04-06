@@ -1,40 +1,100 @@
 {% comment %}
   oos-hide.liquid
-  Hides products tagged "sold-out" from Dawn collection grids.
-  Works in two layers:
-    1. CSS :has() — instant, no layout flash (modern browsers)
-    2. JS fallback — runs after DOMContentLoaded (older browsers)
+  Excludes products tagged "sold-out" from Dawn collection pages.
 
-  Include in the collection template via the oos-filter section.
+  PRIMARY — Server-side tag filter (FIX 1):
+    Redirects to the same URL with +tag_not=sold-out appended to the
+    active tag filter (or adds it as a new tag filter).
+    This uses Shopify's native collection filtering so excluded products
+    are never fetched — no flash, no layout shift, pagination-safe.
+
+  FALLBACK — CSS + JS (FIX 2):
+    Broad selector set covering Dawn's actual sold-out card markup.
+    Catches any products that slip through before the redirect fires,
+    or on browsers that have already followed the redirect.
 {% endcomment %}
+
+<script>
+(function () {
+  var url    = new URL(window.location.href);
+  var search = url.searchParams;
+
+  // Only act on collection pages (/collections/*)
+  if (!window.location.pathname.startsWith('/collections/')) return;
+
+  // Check whether tag_not=sold-out is already active
+  // Shopify tag filters appear as ?q=tag_not%3Asold-out or as a path
+  // segment. We also handle the raw query-string form.
+  var alreadyFiltered =
+    window.location.href.indexOf('tag_not%3Asold-out') !== -1 ||
+    window.location.href.indexOf('tag_not=sold-out')   !== -1 ||
+    window.location.href.indexOf('+tag_not%3Asold-out') !== -1;
+
+  if (!alreadyFiltered) {
+    // Build the redirect URL.
+    // Shopify collection tag filtering uses the path segment form:
+    //   /collections/{handle}/tag1+tag2
+    // or the query-string form for search-based collections:
+    //   ?q=tag:available+tag_not:sold-out
+    //
+    // The simplest cross-theme approach: append to the existing
+    // filter.p.tag[] query param, or add a new one.
+    var existing = search.getAll('filter.p.tag[]');
+    if (existing.length > 0) {
+      // Availability-filter-style: add our exclusion alongside existing tags
+      search.append('filter.p.tag[]', 'tag_not:sold-out');
+    } else {
+      // No existing tag filter — use Shopify's tag exclusion query string
+      search.set('filter.p.tag[]', 'tag_not:sold-out');
+    }
+    url.searchParams = search;
+
+    // Use replaceState so the back button works naturally,
+    // then reload to let Shopify apply the server-side filter.
+    // (location.replace avoids a back-button loop)
+    window.location.replace(url.toString());
+  }
+})();
+</script>
 
 <style>
   /*
-   * Dawn renders each product as <li class="grid__item">.
-   * The sold-out badge carries class .badge--sold-out.
-   * Hide grid items that contain a sold-out badge.
+   * CSS fallback — broad selector set covering Dawn's actual markup.
+   * Dawn uses .card--sold-out on the card element itself, and may render
+   * a .badge containing "Sold out" text inside .card__badge.
+   * These selectors fire instantly before JS runs in modern browsers.
    */
-  li.grid__item:has(.badge--sold-out) { display: none !important; }
+
+  /* Dawn: card element gets .card--sold-out */
+  li.grid__item:has(.card--sold-out)                  { display: none !important; }
+
+  /* Dawn: sold-out overlay badge inside card */
+  li.grid__item:has(.card__badge .badge--bottom-left)  { display: none !important; }
+
+  /* Older Dawn: generic .badge--sold-out */
+  li.grid__item:has(.badge--sold-out)                  { display: none !important; }
+
+  /* card-wrapper variant used by some Dawn sub-themes */
+  .card-wrapper:has(.card--sold-out)                   { display: none !important; }
+  .card-wrapper:has(.badge--sold-out)                  { display: none !important; }
 </style>
 
 <script>
 (function () {
+  /* JS fallback: hides sold-out cards for browsers without :has() support */
   function hideSoldOut() {
-    document.querySelectorAll('.badge--sold-out').forEach(function (badge) {
-      var item = badge.closest('li.grid__item') || badge.closest('.card-wrapper');
-      if (item) item.style.display = 'none';
+    var selectors = [
+      '.card--sold-out',
+      '.badge--sold-out',
+    ];
+    selectors.forEach(function (sel) {
+      document.querySelectorAll(sel).forEach(function (el) {
+        var item = el.closest('li.grid__item') || el.closest('.card-wrapper');
+        if (item) item.style.display = 'none';
+      });
     });
   }
-  /* Run after initial render */
   document.addEventListener('DOMContentLoaded', hideSoldOut);
-  /* Re-run after Shopify filter/pagination re-renders */
   document.addEventListener('shopify:section:load', hideSoldOut);
-  /* Also observe DOM mutations for AJAX-driven pagination */
-  if (typeof MutationObserver !== 'undefined') {
-    new MutationObserver(hideSoldOut).observe(document.documentElement, {
-      childList: true,
-      subtree:   true,
-    });
-  }
 })();
 </script>
