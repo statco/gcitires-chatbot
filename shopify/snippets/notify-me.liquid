@@ -1,0 +1,139 @@
+{% comment %}
+  notify-me.liquid
+  Back-in-stock email capture form.
+  Renders only when product.available == false (all variants sold out).
+  Submits to https://gci-brain.vercel.app/api/notifyMe via fetch.
+
+  Usage: {% render 'notify-me', product: product %}
+{% endcomment %}
+
+{% unless product.available %}
+<div class="notify-me" id="notify-me-{{ product.id }}">
+  <p class="notify-me__heading">Out of stock</p>
+  <p class="notify-me__sub">Get notified when this is back in stock.</p>
+
+  <form
+    class="notify-me__form"
+    id="notify-me-form-{{ product.id }}"
+    onsubmit="notifyMeSubmit(event, '{{ product.id }}', {{ product.title | json }})"
+    novalidate
+  >
+    <div class="notify-me__row">
+      <input
+        type="email"
+        class="notify-me__input"
+        placeholder="Your email address"
+        aria-label="Your email address"
+        required
+        autocomplete="email"
+      />
+      <button type="submit" class="notify-me__btn">Notify me</button>
+    </div>
+    <p class="notify-me__msg notify-me__msg--success" aria-live="polite" hidden>
+      ✓ We'll email you when this is back in stock!
+    </p>
+    <p class="notify-me__msg notify-me__msg--error" aria-live="polite" hidden>
+      Something went wrong. Please try again.
+    </p>
+  </form>
+</div>
+
+<style>
+  .notify-me {
+    margin: 24px 0;
+    padding: 20px;
+    background: #f8f8f8;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+  }
+  .notify-me__heading {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0 0 4px;
+    color: #111;
+  }
+  .notify-me__sub {
+    font-size: 13px;
+    color: #666;
+    margin: 0 0 14px;
+  }
+  .notify-me__row {
+    display: flex;
+    gap: 8px;
+  }
+  .notify-me__input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .notify-me__input:focus {
+    outline: none;
+    border-color: #B8192E;
+    box-shadow: 0 0 0 2px rgba(184,25,46,0.15);
+  }
+  .notify-me__btn {
+    padding: 10px 20px;
+    background: #B8192E;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 150ms ease;
+  }
+  .notify-me__btn:hover  { background: #9a1424; }
+  .notify-me__btn:disabled { opacity: 0.55; cursor: not-allowed; }
+  .notify-me__msg {
+    margin: 10px 0 0;
+    font-size: 13px;
+  }
+  .notify-me__msg--success { color: #2d8a4e; }
+  .notify-me__msg--error   { color: #B8192E; }
+  @media (max-width: 480px) {
+    .notify-me__row { flex-direction: column; }
+    .notify-me__btn { width: 100%; }
+  }
+</style>
+
+<script>
+async function notifyMeSubmit(event, productId, productTitle) {
+  event.preventDefault();
+  var form       = event.target;
+  var btn        = form.querySelector('.notify-me__btn');
+  var input      = form.querySelector('.notify-me__input');
+  var successMsg = form.querySelector('.notify-me__msg--success');
+  var errorMsg   = form.querySelector('.notify-me__msg--error');
+
+  btn.disabled   = true;
+  btn.textContent = '…';
+  successMsg.hidden = true;
+  errorMsg.hidden   = true;
+
+  try {
+    var res = await fetch('https://gci-brain.vercel.app/api/notifyMe', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ productId: productId, productTitle: productTitle, email: input.value }),
+    });
+    if (res.ok) {
+      input.value       = '';
+      successMsg.hidden = false;
+      btn.textContent   = '✓ You\'re in!';
+    } else {
+      throw new Error('server error');
+    }
+  } catch (_) {
+    errorMsg.hidden   = false;
+    btn.disabled      = false;
+    btn.textContent   = 'Notify me';
+  }
+}
+</script>
+{% endunless %}

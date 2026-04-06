@@ -1,0 +1,40 @@
+{% comment %}
+  oos-hide.liquid
+  Hides products tagged "sold-out" from Dawn collection grids.
+  Works in two layers:
+    1. CSS :has() — instant, no layout flash (modern browsers)
+    2. JS fallback — runs after DOMContentLoaded (older browsers)
+
+  Include in the collection template via the oos-filter section.
+{% endcomment %}
+
+<style>
+  /*
+   * Dawn renders each product as <li class="grid__item">.
+   * The sold-out badge carries class .badge--sold-out.
+   * Hide grid items that contain a sold-out badge.
+   */
+  li.grid__item:has(.badge--sold-out) { display: none !important; }
+</style>
+
+<script>
+(function () {
+  function hideSoldOut() {
+    document.querySelectorAll('.badge--sold-out').forEach(function (badge) {
+      var item = badge.closest('li.grid__item') || badge.closest('.card-wrapper');
+      if (item) item.style.display = 'none';
+    });
+  }
+  /* Run after initial render */
+  document.addEventListener('DOMContentLoaded', hideSoldOut);
+  /* Re-run after Shopify filter/pagination re-renders */
+  document.addEventListener('shopify:section:load', hideSoldOut);
+  /* Also observe DOM mutations for AJAX-driven pagination */
+  if (typeof MutationObserver !== 'undefined') {
+    new MutationObserver(hideSoldOut).observe(document.documentElement, {
+      childList: true,
+      subtree:   true,
+    });
+  }
+})();
+</script>

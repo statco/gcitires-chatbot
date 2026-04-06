@@ -1,0 +1,15 @@
+{% comment %}
+  notify-me-section — Dawn section
+  Renders the back-in-stock email capture form on product pages
+  when the product is not available (all variants sold out).
+{% endcomment %}
+
+{% render 'notify-me', product: product %}
+
+{% schema %}
+{
+  "name": "Notify Me",
+  "tag":  "div",
+  "settings": []
+}
+{% endschema %}

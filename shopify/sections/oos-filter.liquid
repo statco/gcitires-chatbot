@@ -1,0 +1,15 @@
+{% comment %}
+  oos-filter — Dawn section
+  Injects the OOS-hide snippet into collection pages.
+  Add this section to the collection template BEFORE the product grid.
+{% endcomment %}
+
+{% render 'oos-hide' %}
+
+{% schema %}
+{
+  "name": "OOS Filter",
+  "tag":  "div",
+  "settings": []
+}
+{% endschema %}
