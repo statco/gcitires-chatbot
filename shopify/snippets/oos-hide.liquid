@@ -22,6 +22,12 @@
   // Only act on collection pages (/collections/*)
   if (!window.location.pathname.startsWith('/collections/')) return;
 
+  // Bail if any filter parameter is already active in the URL —
+  // the user has manually applied filters and we must not clobber them.
+  for (var key of url.searchParams.keys()) {
+    if (key.startsWith('filter.')) return;
+  }
+
   // Check whether tag_not=sold-out is already active
   // Shopify tag filters appear as ?q=tag_not%3Asold-out or as a path
   // segment. We also handle the raw query-string form.
