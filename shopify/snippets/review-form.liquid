@@ -1,0 +1,219 @@
+{% comment %}
+  review-form.liquid
+  Renders a review submission form when the URL contains ?review=<token>.
+  Bilingual: detects Shopify locale (en / fr) and shows appropriate labels.
+  Add with {% render 'review-form' %} in the product template after the description.
+{% endcomment %}
+
+{% assign review_token = '' %}
+{% assign _qs_parts = request.query_string | split: '&' %}
+{% for _part in _qs_parts %}
+  {% assign _kv = _part | split: '=' %}
+  {% if _kv[0] == 'review' %}
+    {% assign review_token = _kv[1] %}
+  {% endif %}
+{% endfor %}
+
+{% if review_token != blank %}
+  {% assign is_fr = false %}
+  {% if request.locale.iso_code == 'fr' or request.locale.iso_code contains 'fr' %}
+    {% assign is_fr = true %}
+  {% endif %}
+
+  <div id="gci-review-form-wrapper" style="
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 32px;
+    margin: 40px 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #fff;
+  ">
+    <h2 style="margin: 0 0 6px; font-size: 20px; font-weight: 700; color: #fff;">
+      {% if is_fr %}Partagez votre exp&eacute;rience{% else %}Share your experience{% endif %}
+    </h2>
+    <p style="margin: 0 0 24px; font-size: 14px; color: #888;">
+      {% if is_fr %}Votre avis aide d&#39;autres conducteurs canadiens.{% else %}Your review helps other Canadian drivers.{% endif %}
+    </p>
+
+    <form id="gci-review-form">
+      <!-- Star rating -->
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; font-size: 13px; color: #aaa; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+          {% if is_fr %}Note{% else %}Rating{% endif %} *
+        </label>
+        <div id="gci-stars" style="display: flex; gap: 6px; cursor: pointer;">
+          {% for i in (1..5) %}
+            <span
+              data-value="{{ i }}"
+              style="font-size: 32px; color: #444; transition: color 0.15s; user-select: none; -webkit-user-select: none;"
+              role="button"
+              aria-label="{{ i }} {% if is_fr %}étoile{% else %}star{% endif %}"
+            >&#9733;</span>
+          {% endfor %}
+        </div>
+        <input type="hidden" id="gci-rating" name="rating" value="">
+      </div>
+
+      <!-- Display name -->
+      <div style="margin-bottom: 16px;">
+        <label for="gci-reviewer-name" style="display: block; font-size: 13px; color: #aaa; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+          {% if is_fr %}Nom affich&eacute;{% else %}Display name{% endif %} *
+        </label>
+        <input
+          type="text"
+          id="gci-reviewer-name"
+          name="reviewerName"
+          placeholder="{% if is_fr %}Ex : Jean M.{% else %}E.g. John M.{% endif %}"
+          maxlength="100"
+          style="
+            width: 100%; box-sizing: border-box;
+            background: #242833; border: 1px solid #333; border-radius: 6px;
+            color: #fff; font-size: 15px; padding: 10px 14px; outline: none;
+          "
+        >
+      </div>
+
+      <!-- Title -->
+      <div style="margin-bottom: 16px;">
+        <label for="gci-review-title" style="display: block; font-size: 13px; color: #aaa; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+          {% if is_fr %}Titre{% else %}Review title{% endif %}
+        </label>
+        <input
+          type="text"
+          id="gci-review-title"
+          name="title"
+          placeholder="{% if is_fr %}R&eacute;sumez votre exp&eacute;rience{% else %}Summarize your experience{% endif %}"
+          maxlength="200"
+          style="
+            width: 100%; box-sizing: border-box;
+            background: #242833; border: 1px solid #333; border-radius: 6px;
+            color: #fff; font-size: 15px; padding: 10px 14px; outline: none;
+          "
+        >
+      </div>
+
+      <!-- Body -->
+      <div style="margin-bottom: 24px;">
+        <label for="gci-review-body" style="display: block; font-size: 13px; color: #aaa; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+          {% if is_fr %}Votre avis{% else %}Your review{% endif %} *
+        </label>
+        <textarea
+          id="gci-review-body"
+          name="body"
+          rows="5"
+          maxlength="5000"
+          placeholder="{% if is_fr %}Parlez de votre exp&eacute;rience avec ce produit&hellip;{% else %}Tell us about your experience with this product&hellip;{% endif %}"
+          style="
+            width: 100%; box-sizing: border-box;
+            background: #242833; border: 1px solid #333; border-radius: 6px;
+            color: #fff; font-size: 15px; padding: 10px 14px;
+            outline: none; resize: vertical; min-height: 120px;
+          "
+        ></textarea>
+      </div>
+
+      <button
+        type="submit"
+        id="gci-review-submit"
+        style="
+          background: #B8192E; color: #fff; border: none; border-radius: 6px;
+          padding: 12px 28px; font-size: 15px; font-weight: 700;
+          cursor: pointer; letter-spacing: 0.2px;
+        "
+      >
+        {% if is_fr %}Soumettre mon avis{% else %}Submit Review{% endif %}
+      </button>
+
+      <p id="gci-review-msg" style="margin: 16px 0 0; font-size: 14px; display: none;"></p>
+    </form>
+  </div>
+
+  <script>
+    (function () {
+      var token = {{ review_token | json }};
+      var lang = {{ request.locale.iso_code | json }} === 'fr' ? 'FR' : 'EN';
+      var stars = document.querySelectorAll('#gci-stars span');
+      var ratingInput = document.getElementById('gci-rating');
+      var form = document.getElementById('gci-review-form');
+      var msg = document.getElementById('gci-review-msg');
+      var submitBtn = document.getElementById('gci-review-submit');
+      var currentRating = 0;
+
+      function setStars(n) {
+        currentRating = n;
+        ratingInput.value = n;
+        stars.forEach(function (s, i) {
+          s.style.color = i < n ? '#B8192E' : '#444';
+        });
+      }
+
+      stars.forEach(function (s) {
+        s.addEventListener('mouseenter', function () {
+          var v = parseInt(s.dataset.value);
+          stars.forEach(function (st, i) { st.style.color = i < v ? '#B8192E' : '#444'; });
+        });
+        s.addEventListener('mouseleave', function () { setStars(currentRating); });
+        s.addEventListener('click', function () { setStars(parseInt(s.dataset.value)); });
+      });
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        if (!currentRating) {
+          showMsg(lang === 'FR' ? 'Veuillez s\u00e9lectionner une note.' : 'Please select a rating.', '#f87171');
+          return;
+        }
+        var reviewerName = document.getElementById('gci-reviewer-name').value.trim();
+        var body = document.getElementById('gci-review-body').value.trim();
+        if (!reviewerName || !body) {
+          showMsg(lang === 'FR' ? 'Nom et avis obligatoires.' : 'Name and review body are required.', '#f87171');
+          return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = lang === 'FR' ? 'Envoi\u2026' : 'Submitting\u2026';
+
+        try {
+          var resp = await fetch('https://gci-brain.vercel.app/api/reviews/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              token: token,
+              rating: currentRating,
+              title: document.getElementById('gci-review-title').value.trim(),
+              body: body,
+              reviewerName: reviewerName,
+              language: lang,
+            }),
+          });
+          var data = await resp.json();
+          if (data.success) {
+            form.innerHTML =
+              '<p style="color:#4ade80;font-size:16px;font-weight:600;">' +
+              (lang === 'FR' ? '\u2713 Merci pour votre avis\u00a0!' : '\u2713 Thank you for your review!') +
+              '</p>' +
+              '<p style="color:#888;font-size:14px;">' +
+              (lang === 'FR'
+                ? 'Votre avis sera publi\u00e9 apr\u00e8s mod\u00e9ration.'
+                : 'Your review will be published after moderation.') +
+              '</p>';
+          } else {
+            showMsg(data.message || (lang === 'FR' ? 'Une erreur est survenue.' : 'An error occurred.'), '#f87171');
+            submitBtn.disabled = false;
+            submitBtn.textContent = lang === 'FR' ? 'Soumettre mon avis' : 'Submit Review';
+          }
+        } catch (err) {
+          showMsg(lang === 'FR' ? 'Erreur r\u00e9seau. R\u00e9essayez.' : 'Network error. Please try again.', '#f87171');
+          submitBtn.disabled = false;
+          submitBtn.textContent = lang === 'FR' ? 'Soumettre mon avis' : 'Submit Review';
+        }
+      });
+
+      function showMsg(text, color) {
+        msg.textContent = text;
+        msg.style.color = color;
+        msg.style.display = 'block';
+      }
+    })();
+  </script>
+{% endif %}

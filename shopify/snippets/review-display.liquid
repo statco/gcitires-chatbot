@@ -1,0 +1,112 @@
+{% comment %}
+  review-display.liquid
+  Fetches and displays approved reviews for the current product.
+  Bilingual (EN/FR). Add with {% render 'review-display' %} below review-form in product template.
+{% endcomment %}
+
+{% assign is_fr = false %}
+{% if request.locale.iso_code == 'fr' or request.locale.iso_code contains 'fr' %}
+  {% assign is_fr = true %}
+{% endif %}
+
+<div id="gci-reviews-section" style="
+  margin: 48px 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #fff;
+">
+  <h2 style="
+    font-size: 20px; font-weight: 700; margin: 0 0 20px;
+    padding-bottom: 16px; border-bottom: 1px solid #2a2a2a; color: #fff;
+  ">
+    {% if is_fr %}Avis clients{% else %}Customer Reviews{% endif %}
+  </h2>
+
+  <div id="gci-reviews-summary" style="display:none;margin-bottom:24px;align-items:center;gap:8px;">
+    <span id="gci-avg-stars" style="font-size:28px;color:#B8192E;"></span>
+    <span id="gci-avg-num" style="font-size:22px;font-weight:700;color:#fff;"></span>
+    <span id="gci-review-count" style="font-size:14px;color:#888;"></span>
+  </div>
+
+  <div id="gci-reviews-list"></div>
+</div>
+
+<script>
+  (function () {
+    var handle = {{ product.handle | json }};
+    var lang = {{ request.locale.iso_code | json }} === 'fr' ? 'FR' : 'EN';
+    var isFr = lang === 'FR';
+    var list = document.getElementById('gci-reviews-list');
+    var summary = document.getElementById('gci-reviews-summary');
+
+    function stars(n) {
+      var s = '';
+      for (var i = 1; i <= 5; i++) s += i <= n ? '\u2605' : '\u2606';
+      return s;
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '';
+      try {
+        return new Date(iso).toLocaleDateString(
+          isFr ? 'fr-CA' : 'en-CA',
+          { year: 'numeric', month: 'short', day: 'numeric' }
+        );
+      } catch (e) { return iso; }
+    }
+
+    function escHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function render(data) {
+      if (!data || !data.count) {
+        list.innerHTML =
+          '<p style="color:#555;font-style:italic;padding:20px 0;">' +
+          (isFr ? 'Soyez le premier \u00e0 laisser un avis.' : 'Be the first to review this product.') +
+          '</p>';
+        return;
+      }
+
+      document.getElementById('gci-avg-stars').textContent = stars(Math.round(data.averageRating));
+      document.getElementById('gci-avg-num').textContent = data.averageRating.toFixed(1);
+      document.getElementById('gci-review-count').textContent =
+        '(' + data.count + (isFr ? ' avis' : ' reviews') + ')';
+      summary.style.display = 'flex';
+
+      list.innerHTML = data.reviews
+        .map(function (r) {
+          return (
+            '<div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:20px 24px;margin-bottom:12px;">'
+            + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">'
+            + '<span style="color:#B8192E;font-size:18px;letter-spacing:2px;">' + stars(r.rating) + '</span>'
+            + '<span style="color:#555;font-size:12px;">' + formatDate(r.approvedAt) + '</span>'
+            + '</div>'
+            + (r.title ? '<p style="margin:0 0 6px;font-weight:700;font-size:15px;color:#fff;">' + escHtml(r.title) + '</p>' : '')
+            + '<p style="margin:0 0 12px;color:#bbb;font-size:14px;line-height:1.6;">' + escHtml(r.body) + '</p>'
+            + '<p style="margin:0;color:#666;font-size:13px;">'
+            + (isFr ? 'par ' : 'by ')
+            + '<strong style="color:#999;">' + escHtml(String(r.reviewerName)) + '</strong>'
+            + '</p>'
+            + '</div>'
+          );
+        })
+        .join('');
+    }
+
+    fetch(
+      'https://gci-brain.vercel.app/api/reviews/list'
+      + '?productHandle=' + encodeURIComponent(handle)
+      + '&language=' + lang
+      + '&limit=20'
+    )
+      .then(function (r) { return r.json(); })
+      .then(render)
+      .catch(function () {
+        list.innerHTML = '';
+      });
+  })();
+</script>
