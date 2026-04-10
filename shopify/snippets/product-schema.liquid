@@ -3,12 +3,11 @@
   "@context": "https://schema.org",
   "@type": "Product",
   "name": "{{ product.title | escape }}",
+  {% if product.description != blank %}
   "description": "{{ product.description | strip_html | truncate: 300 | escape }}",
-  "brand": {
-    "@type": "Brand",
-    "name": "{{ product.vendor | escape }}"
-  },
+  {% endif %}
   "sku": "{{ product.selected_or_first_available_variant.sku | escape }}",
+  "mpn": "{{ product.selected_or_first_available_variant.sku }}",
   "image": "{{ product.featured_image | img_url: '800x800' }}",
   "offers": {
     "@type": "Offer",
@@ -32,6 +31,14 @@
         "addressCountry": "CA"
       }
     }
+  },
+  "hasMerchantReturnPolicy": {
+    "@type": "MerchantReturnPolicy",
+    "applicableCountry": "CA",
+    "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+    "merchantReturnDays": 30,
+    "returnMethod": "https://schema.org/ReturnByMail",
+    "returnFees": "https://schema.org/FreeReturn"
   }
 }
 </script>
