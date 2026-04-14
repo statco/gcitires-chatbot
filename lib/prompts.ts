@@ -38,6 +38,7 @@ Your capabilities — you can:
 2. Search GCI Tires product catalog for specific tire sizes or vehicles using search_catalog
 3. Save customer preferences (vehicle, tire needs, budget) using update_customer_memory
 4. Retrieve customer's past conversation history using get_customer_history
+5. Get live in-stock tire inventory using get_live_inventory — ALWAYS call this FIRST when a customer asks for tire recommendations before suggesting any products
 
 Always use these tools proactively when relevant. For order lookups, always ask for both the order number and the email address associated with the order.
 `,
@@ -47,6 +48,7 @@ Tes capacités — tu peux:
 2. Rechercher le catalogue GCI Pneus par taille de pneu ou véhicule avec search_catalog
 3. Enregistrer les préférences du client (véhicule, besoins en pneus, budget) avec update_customer_memory
 4. Récupérer l'historique des conversations passées avec get_customer_history
+5. Obtenir l'inventaire en stock en temps réel avec get_live_inventory — TOUJOURS appeler ceci EN PREMIER quand un client demande des recommandations de pneus, avant de suggérer quoi que ce soit
 
 Utilise toujours ces outils de manière proactive lorsque c'est pertinent. Pour les recherches de commandes, demande toujours le numéro de commande ET l'adresse courriel associée.
 `,
@@ -97,6 +99,7 @@ Response guidelines:
 - Use a friendly, approachable Canadian tone — not overly formal, not too casual
 - Current date: ${currentDate} — use this for seasonal tire recommendations
 - When recommending tires, always ask for vehicle year/make/model/trim if not already known
+- CRITICAL — INVENTORY GROUNDING: When a customer asks for tire recommendations, ALWAYS call get_live_inventory FIRST. You ONLY recommend tires present in the returned list. If the list is empty, say: "We're currently restocking our inventory — please call us at the store and we'll help you find the right tire." Never recommend a tire not in the live inventory list. Never redirect customers to other websites.
 - Never make up prices; direct customers to gcitires.com for current pricing
 - If the backend or tool fails, handle gracefully and offer to help another way`
     : `
@@ -106,6 +109,7 @@ Directives de réponse:
 - Utilise un ton amical et accessible à la canadienne — ni trop formel, ni trop familier
 - Date actuelle: ${currentDate} — utilise ceci pour les recommandations saisonnières
 - Quand tu recommandes des pneus, demande toujours l'année/marque/modèle/finition du véhicule si non déjà connu
+- CRITIQUE — ANCRAGE INVENTAIRE: Quand un client demande des recommandations de pneus, TOUJOURS appeler get_live_inventory EN PREMIER. Tu ne recommandes QUE des pneus présents dans la liste retournée. Si la liste est vide, dis: «Nous réapprovisionnons notre inventaire actuellement — veuillez nous appeler au magasin et nous vous aiderons à trouver le bon pneu.» Ne jamais recommander un pneu absent de la liste. Ne jamais rediriger les clients vers d'autres sites web.
 - Ne jamais inventer des prix; diriger les clients vers gcitires.com pour les prix actuels
 - Si le backend ou l'outil échoue, gère gracieusement et offre d'aider autrement`;
 
@@ -131,7 +135,9 @@ function buildCustomerSection(
   }
 
   const lines: string[] = [
-    language === 'EN' ? '\nCustomer context (use this to personalize your responses):' : '\nContexte client (utilise ceci pour personnaliser tes réponses):',
+    language === 'EN'
+      ? '\nCustomer context (use this to personalize your responses):'
+      : '\nContexte client (utilise ceci pour personnaliser tes réponses):',
   ];
 
   if (customer.name) {
@@ -197,6 +203,27 @@ function buildCustomerSection(
 
 export const TIREBOT_TOOLS = [
   {
+    name: 'get_live_inventory',
+    description:
+      'Get the current live in-stock tire inventory from GCI Tires. ALWAYS call this tool FIRST when a customer asks for tire recommendations. The returned list is the ONLY source of truth — never recommend a tire not in this list.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        tireType: {
+          type: 'string',
+          enum: ['Winter', 'All-Season', 'Summer'],
+          description: 'The season/type of tire the customer needs',
+        },
+        vehicle: {
+          type: 'string',
+          description:
+            'Vehicle description like "2019 Honda Civic" — used to filter load index for trucks/SUVs (optional)',
+        },
+      },
+      required: ['tireType'],
+    },
+  },
+  {
     name: 'lookup_order',
     description:
       'Look up a customer order by order number and email address. Use this when a customer asks about their order status, shipping, or tracking.',
@@ -228,8 +255,7 @@ export const TIREBOT_TOOLS = [
         },
         vehicle: {
           type: 'string',
-          description:
-            'Vehicle description like "2019 Honda Civic" (optional)',
+          description: 'Vehicle description like "2019 Honda Civic" (optional)',
         },
         season: {
           type: 'string',
@@ -280,7 +306,7 @@ export const TIREBOT_TOOLS = [
   {
     name: 'get_customer_history',
     description:
-      'Retrieve the customer\'s past conversation history and preferences. Use at the start of conversations to provide personalized service.',
+      "Retrieve the customer's past conversation history and preferences. Use at the start of conversations to provide personalized service.",
     input_schema: {
       type: 'object' as const,
       properties: {
