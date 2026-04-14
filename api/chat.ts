@@ -20,6 +20,9 @@ const ALLOWED_ORIGINS = (
   .split(',')
   .map((o) => o.trim());
 
+const INVENTORY_BASE_URL =
+  process.env.INVENTORY_API_URL || 'https://gci-brain.vercel.app';
+
 function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean {
   const origin = req.headers.origin || '';
   const allowed =
@@ -80,7 +83,7 @@ export default async function handler(
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
-  res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+  res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders();
 
   function sendEvent(data: Record<string, unknown>): void {
@@ -114,7 +117,6 @@ export default async function handler(
         }
 
         if (recentSessions.length > 0) {
-          // Summarize recent sessions (last 3 messages from each)
           const summaryParts = recentSessions.map((s) => {
             try {
               const msgs = JSON.parse(s.messages) as Array<{
@@ -159,6 +161,25 @@ export default async function handler(
       input: Record<string, unknown>
     ): Promise<unknown> {
       switch (name) {
+        case 'get_live_inventory': {
+          const tireType = (input.tireType as string) || 'All-Season';
+          const vehicle  = (input.vehicle  as string) || '';
+          const params = new URLSearchParams({ tireType });
+          if (vehicle) params.set('vehicle', vehicle);
+          try {
+            const inventoryResp = await fetch(
+              `${INVENTORY_BASE_URL}/api/inventory?${params.toString()}`
+            );
+            if (!inventoryResp.ok) {
+              return { error: `Inventory service returned ${inventoryResp.status}`, tires: [], count: 0 };
+            }
+            return inventoryResp.json();
+          } catch (err: any) {
+            console.error('[chat] get_live_inventory failed:', err);
+            return { error: 'Inventory service unavailable', tires: [], count: 0 };
+          }
+        }
+
         case 'lookup_order': {
           const { order_number, email } = input as {
             order_number: string;
@@ -170,9 +191,9 @@ export default async function handler(
         case 'search_catalog': {
           return searchCatalog({
             tire_size: input.tire_size as string | undefined,
-            vehicle: input.vehicle as string | undefined,
-            season: input.season as string | undefined,
-            limit: (input.limit as number | undefined) || 5,
+            vehicle:   input.vehicle   as string | undefined,
+            season:    input.season    as string | undefined,
+            limit:     (input.limit    as number | undefined) || 5,
           });
         }
 
@@ -242,7 +263,7 @@ export default async function handler(
 
     sendEvent({ type: 'done' });
 
-    // Async: persist conversation (fire-and-forget, don't await)
+    // Async: persist conversation (fire-and-forget)
     if (sessionId && customerId && messages.length > 0) {
       saveConversation({
         session_id: sessionId,
