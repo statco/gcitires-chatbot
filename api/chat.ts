@@ -223,13 +223,30 @@ export default async function handler(
       }
     }
 
-    // Stream Claude's response
+    // ── Link fixup: accumulated post-processing ──────────────────────────────
+    // Claude consistently wraps product links in __bold__ causing malformed hrefs
+    // and 404s. We accumulate the full response, strip the __wrapper__, then re-emit
+    // the corrected text so the widget never sees a broken link.
+    function fixMarkdownLinks(text: string): string {
+      // Pattern 1: [text](__[display](real_url))__  →  [text](real_url)
+      let out = text.replace(/\[([^\]]+)\]\(__\[[^\]]*\]\(([^)]+)\)\)__/g, '[$1]($2)');
+      // Pattern 2: __[text](url)__  →  [text](url)
+      out = out.replace(/__\[([^\]]+)\]\(([^)]+)\)__/g, '[$1]($2)');
+      // Pattern 3: **[text](url)**  →  [text](url)
+      out = out.replace(/\*\*\[([^\]]+)\]\(([^)]+)\)\*\*/g, '[$1]($2)');
+      return out;
+    }
+
+    // Tool events still stream in real-time (user sees "Searching…" immediately).
+    // Text is accumulated then emitted fixed — adds ~0ms since we re-stream instantly.
+    let accumulatedText = '';
+
     await streamChat({
       messages,
       systemPrompt,
       tools: TIREBOT_TOOLS as Parameters<typeof streamChat>[0]['tools'],
       onText(text) {
-        sendEvent({ type: 'text', content: text });
+        accumulatedText += text;              // accumulate — do NOT send yet
       },
       onToolStart(toolName) {
         sendEvent({ type: 'tool_start', tool: toolName });
@@ -239,6 +256,12 @@ export default async function handler(
       },
       executeTool,
     });
+
+    // Fix links then emit the full corrected text as one chunk
+    const correctedText = fixMarkdownLinks(accumulatedText);
+    if (correctedText) {
+      sendEvent({ type: 'text', content: correctedText });
+    }
 
     sendEvent({ type: 'done' });
 
