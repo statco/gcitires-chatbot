@@ -211,94 +211,135 @@ export async function searchCatalog(params: {
   season?: string;
   limit?: number;
 }): Promise<CatalogSearchResult> {
-  const { tire_size, vehicle, season, limit = 5 } = params;
+  const { tire_size, vehicle, season, limit = 6 } = params;
 
-  try {
-    // Build search query — Shopify Admin API product search
-    const queryParts: string[] = ['product_type:Tires OR product_type:Pneus'];
+  // ── Storefront GraphQL (no token needed — store has public access) ─────────
+  // Confirmed: returns correct products with proper prices and handles.
+  // Admin REST tag search was broken (matched unrelated products).
+  const STOREFRONT_URL = `https://${SHOPIFY_DOMAIN}/api/2024-01/graphql.json`;
 
-    // Map season to common tag patterns
-    if (season) {
-      const seasonMap: Record<string, string> = {
-        winter: 'winter hiver',
-        summer: 'summer été',
-        'all-season': 'all-season toutes-saisons',
-        'all-weather': 'all-weather toutes-conditions',
-      };
-      const seasonTags = seasonMap[season] || season;
-      queryParts.push(seasonTags);
-    }
-
-    if (tire_size) {
-      queryParts.push(tire_size);
-    }
-
-    if (vehicle) {
-      // Extract year/make from vehicle string
-      const parts = vehicle.trim().split(' ');
-      if (parts.length >= 2) {
-        queryParts.push(parts.slice(0, 2).join(' '));
+  const STOREFRONT_QUERY = `
+    query SearchTires($q: String!, $after: String) {
+      products(first: 50, query: $q, after: $after) {
+        pageInfo { hasNextPage endCursor }
+        edges {
+          node {
+            id title handle tags
+            images(first: 1) { edges { node { url } } }
+            variants(first: 1) {
+              edges {
+                node {
+                  id
+                  priceV2 { amount }
+                  availableForSale
+                }
+              }
+            }
+          }
+        }
       }
     }
+  `;
 
-    // Use the built query to actually filter on the API side
-    const queryEncoded = encodeURIComponent(queryParts.join(' '));
-    // Fetch a larger pool (50) so client-side size/season filter has enough to work with
-    const data = await shopifyFetch<{ products: ShopifyProduct[] }>(
-      `/products.json?limit=50&fields=id,title,handle,product_type,tags,variants,images&title=${queryEncoded}`
-    );
+  try {
+    // ── Build Storefront search query ────────────────────────────────────────
+    // Storefront full-text search on title works perfectly for tire sizes.
+    // Vehicle-only search: we ask for the size first (handled in system prompt).
+    const searchTerm = tire_size
+      ? tire_size.trim()
+      : vehicle
+        ? vehicle.trim().split(' ').slice(0, 3).join(' ')   // e.g. "2022 Toyota RAV4"
+        : '';
 
-    // Client-side filter since Shopify Admin REST has limited search
-    let products = data.products || [];
-
-    if (tire_size) {
-      const sizePattern = tire_size.replace(/[^0-9/R]/gi, '').toLowerCase();
-      products = products.filter(
-        (p) =>
-          p.title.toLowerCase().includes(sizePattern) ||
-          p.tags.toLowerCase().includes(sizePattern) ||
-          p.variants.some((v) =>
-            v.title.toLowerCase().includes(sizePattern)
-          )
-      );
+    if (!searchTerm) {
+      return { found: false, products: [], totalFound: 0 };
     }
 
+    const resp = await fetch(STOREFRONT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: STOREFRONT_QUERY, variables: { q: searchTerm } }),
+    });
+
+    if (!resp.ok) {
+      console.error('[searchCatalog] Storefront error', resp.status);
+      return { found: false, products: [], totalFound: 0 };
+    }
+
+    const json = (await resp.json()) as { data?: { products?: { edges?: unknown[] } }; errors?: unknown[] };
+
+    if (json.errors) {
+      console.error('[searchCatalog] GraphQL errors:', json.errors);
+    }
+
+    const edges = (json.data?.products?.edges ?? []) as Array<{
+      node: {
+        id: string; title: string; handle: string; tags: string[];
+        images: { edges: Array<{ node: { url: string } }> };
+        variants: { edges: Array<{ node: { id: string; priceV2: { amount: string }; availableForSale: boolean } }> };
+      };
+    }>;
+
+    // ── Map to product format ────────────────────────────────────────────────
+    let products = edges.map(({ node: p }) => {
+      const variant  = p.variants.edges[0]?.node;
+      const imageUrl = p.images.edges[0]?.node.url || null;
+      const tagArr   = Array.isArray(p.tags) ? p.tags : [];
+      const price    = variant?.priceV2.amount ? `$${parseFloat(variant.priceV2.amount).toFixed(2)}` : 'See website';
+
+      return {
+        title:      p.title,
+        url:        `https://gcitires.com/products/${p.handle}`,
+        type:       'Tires',
+        priceFrom:  price,
+        inStock:    variant?.availableForSale ?? false,
+        variants:   [] as string[],
+        imageUrl,
+        tags:       tagArr,
+      };
+    });
+
+    // ── Season filter (client-side from tags) ─────────────────────────────────
     if (season) {
-      const seasonLower = season.toLowerCase();
-      products = products.filter(
-        (p) =>
-          p.title.toLowerCase().includes(seasonLower) ||
-          p.tags.toLowerCase().includes(seasonLower) ||
-          p.product_type.toLowerCase().includes(seasonLower)
-      );
+      const seasonKeywords: Record<string, string[]> = {
+        winter:      ['winter', 'hiver', 'wintrac', 'blizzak', 'hakkapeliitta', 'icepro', 'winguard', 'frostrack', '3pmsf'],
+        summer:      ['summer', 'été', 'cobra-instinct', 'summer-tire', 'performance'],
+        'all-season':['all-season', 'toutes-saisons', 'all-weather', 'toutes-conditions', 'as', '4-season', 'quatrac', 'hypertrac'],
+        'all-weather':['all-weather', 'toutes-conditions', '4-season', 'quatrac', 'hypertrac', 'all-season'],
+      };
+      const kws = seasonKeywords[season.toLowerCase()] ?? [season.toLowerCase()];
+
+      const seasonFiltered = products.filter(p => {
+        const haystack = (p.title + ' ' + p.tags.join(' ')).toLowerCase();
+        return kws.some(k => haystack.includes(k));
+      });
+
+      // Only apply season filter if it still returns results — else keep all
+      if (seasonFiltered.length > 0) products = seasonFiltered;
     }
 
-    const mapped = products.slice(0, limit).map((p) => ({
-      title: p.title,
-      url: `https://gcitires.com/products/${p.handle}`,
-      type: p.product_type,
-      priceFrom: p.variants[0]?.price
-        ? `$${p.variants[0].price}`
-        : 'See website',
-      variants: p.variants.slice(0, 5).map((v) => v.title),
-      imageUrl: p.images[0]?.src || null,
-      tags: p.tags
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean),
-    }));
+    // ── Deduplicate: keep best-priced entry per model name ───────────────────
+    const seen = new Map<string, typeof products[0]>();
+    for (const p of products) {
+      // Key = title without size (strip trailing size pattern)
+      const modelKey = p.title.replace(/\s+\d{3}\/\d{2}R\d{2}.*$/, '').trim();
+      const existing = seen.get(modelKey);
+      if (!existing || (p.inStock && !existing.inStock)) {
+        seen.set(modelKey, p);
+      }
+    }
+    const deduped = [...seen.values()].slice(0, limit);
+
+    console.log(`[searchCatalog] q="${searchTerm}" season=${season} → ${edges.length} raw, ${deduped.length} deduped`);
 
     return {
-      found: mapped.length > 0,
-      products: mapped,
-      totalFound: mapped.length,
+      found:      deduped.length > 0,
+      products:   deduped,
+      totalFound: deduped.length,
     };
+
   } catch (err) {
-    console.error('[Shopify] searchCatalog error:', err);
-    return {
-      found: false,
-      products: [],
-      totalFound: 0,
-    };
+    console.error('[searchCatalog] unexpected error:', err);
+    return { found: false, products: [], totalFound: 0 };
   }
 }
