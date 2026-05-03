@@ -228,12 +228,28 @@ export default async function handler(
     // and 404s. We accumulate the full response, strip the __wrapper__, then re-emit
     // the corrected text so the widget never sees a broken link.
     function fixMarkdownLinks(text: string): string {
-      // Pattern 1: [text](__[display](real_url))__  →  [text](real_url)
-      let out = text.replace(/\[([^\]]+)\]\(__\[[^\]]*\]\(([^)]+)\)\)__/g, '[$1]($2)');
-      // Pattern 2: __[text](url)__  →  [text](url)
-      out = out.replace(/__\[([^\]]+)\]\(([^)]+)\)__/g, '[$1]($2)');
-      // Pattern 3: **[text](url)**  →  [text](url)
-      out = out.replace(/\*\*\[([^\]]+)\]\(([^)]+)\)\*\*/g, '[$1]($2)');
+      // The GCI chatbot widget renders only bare https:// URLs as links.
+      // It does NOT parse markdown [text](url) syntax — the closing ) gets
+      // included in the href, causing 404s.
+      //
+      // Strategy: convert ALL markdown link patterns → "text: https://url"
+      // so the bare URL is extracted correctly by the widget renderer.
+
+      let out = text;
+
+      // Pattern 1: [text](__[display](real_url))__  — Claude's bold wrapper
+      out = out.replace(/\[([^\]]+)\]\(__\[[^\]]*\]\(([^)]+)\)\)__/g, '$1: $2');
+
+      // Pattern 2: __[text](url)__
+      out = out.replace(/__\[([^\]]+)\]\(([^)]+)\)__/g, '$1: $2');
+
+      // Pattern 3: **[text](url)**
+      out = out.replace(/\*\*\[([^\]]+)\]\(([^)]+)\)\*\*/g, '$1: $2');
+
+      // Pattern 4: plain [text](url)  — catches any remaining markdown links
+      // Uses https?:// anchor to only match real URLs, not relative links
+      out = out.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '$1: $2');
+
       return out;
     }
 
