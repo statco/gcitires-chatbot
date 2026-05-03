@@ -241,9 +241,11 @@ export async function searchCatalog(params: {
       }
     }
 
-    const query = encodeURIComponent(queryParts.join(' '));
+    // Use the built query to actually filter on the API side
+    const queryEncoded = encodeURIComponent(queryParts.join(' '));
+    // Fetch a larger pool (50) so client-side size/season filter has enough to work with
     const data = await shopifyFetch<{ products: ShopifyProduct[] }>(
-      `/products.json?limit=${limit}&fields=id,title,handle,product_type,tags,variants,images`
+      `/products.json?limit=50&fields=id,title,handle,product_type,tags,variants,images&title=${queryEncoded}`
     );
 
     // Client-side filter since Shopify Admin REST has limited search
