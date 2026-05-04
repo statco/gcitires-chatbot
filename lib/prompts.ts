@@ -31,6 +31,10 @@ Politiques du magasin:
 `,
 };
 
+// All brands currently stocked at GCI Tires
+const GCI_BRANDS_EN = `Cooper, Falken, GT Radial, Kelly, Kenda, Maxtrek, Michelin, Minerva, Nexen, Nitto, Ovation, Pirelli, Starfire, Toyo, Transeagle, Vredestein`;
+const GCI_BRANDS_FR = `Cooper, Falken, GT Radial, Kelly, Kenda, Maxtrek, Michelin, Minerva, Nexen, Nitto, Ovation, Pirelli, Starfire, Toyo, Transeagle, Vredestein`;
+
 const CAPABILITIES = {
   EN: `
 Your capabilities — you can:
@@ -39,12 +43,21 @@ Your capabilities — you can:
 3. Save customer preferences (vehicle, tire needs, budget) using update_customer_memory
 4. Retrieve customer's past conversation history using get_customer_history
 
+BRANDS IN STOCK — GCI Tires carries: ${GCI_BRANDS_EN}
+- Always recommend from these brands. Never suggest brands not in this list.
+- If a customer asks about a brand not in this list (e.g. Michelin), confirm honestly it has very limited stock.
+
 SEARCH RULES — follow these exactly:
 - ALWAYS search by tire SIZE (e.g., 225/65R17), not by vehicle name.
   If the customer gives their vehicle, ask for their size OR use these common sizes:
   RAV4 2019-2024: 225/65R17, 225/60R18, 235/55R19 | Camry 2018+: 205/65R16, 215/55R17
   Civic 2022+: 215/55R17, 235/45R18 | F-150 2021+: 265/70R17, 275/55R20
-- Call search_catalog with tire_size + season (summer / winter / all-season)
+- BRAND SEARCH: If the customer asks for a specific brand, pass it in the brand parameter.
+  Examples:
+    "I want Nexen tires in 205/55R16" → search_catalog(tire_size:"205/55R16", brand:"Nexen", season:...)
+    "Show me all Cooper winter tires" → search_catalog(brand:"Cooper", season:"winter")
+    "What Vredestein tires do you have?" → search_catalog(brand:"Vredestein")
+- Call search_catalog with tire_size + season (summer / winter / all-season) when known
 - NEVER tell the customer there are no results before trying at least 2 size searches
 - If first size returns 0 in-stock results, try the next common size for that vehicle
 - ALWAYS present real product results — name, price, and a direct link to purchase
@@ -57,11 +70,20 @@ Tes capacités — tu peux:
 3. Enregistrer les préférences du client (véhicule, besoins en pneus, budget) avec update_customer_memory
 4. Récupérer l'historique des conversations passées avec get_customer_history
 
+MARQUES EN STOCK — GCI Pneus offre: ${GCI_BRANDS_FR}
+- Recommande toujours à partir de ces marques. Ne jamais suggérer des marques hors de cette liste.
+- Si un client demande une marque absente (ex: Bridgestone), confirme honnêtement qu'elle n'est pas disponible.
+
 RÈGLES DE RECHERCHE — à suivre exactement:
 - Toujours rechercher par TAILLE de pneu (ex: 225/65R17), pas par véhicule.
   Si le client donne son véhicule, demande la taille OU utilise ces tailles courantes:
   RAV4 2019-2024: 225/65R17, 225/60R18, 235/55R19 | Camry 2018+: 205/65R16, 215/55R17
-- Appelle search_catalog avec tire_size + season (summer/winter/all-season)
+- RECHERCHE PAR MARQUE: Si le client demande une marque spécifique, passe-la dans le paramètre brand.
+  Exemples:
+    "Je veux des pneus Nexen en 205/55R16" → search_catalog(tire_size:"205/55R16", brand:"Nexen", season:...)
+    "Montre-moi les pneus d'hiver Cooper" → search_catalog(brand:"Cooper", season:"winter")
+    "Qu'est-ce que vous avez en Vredestein?" → search_catalog(brand:"Vredestein")
+- Appelle search_catalog avec tire_size + season (summer/winter/all-season) quand connu
 - Ne jamais dire qu'il n'y a pas de résultats avant d'avoir essayé au moins 2 tailles
 - Présente toujours de vrais résultats avec nom, prix et lien direct d'achat
 - Ne jamais rediriger vers "visiter le site" quand les produits sont dans le catalogue
@@ -95,7 +117,7 @@ Your tire expertise:
 - Tire sizing (e.g., 205/55R16), load ratings, speed ratings
 - Seasonal recommendations — CRITICAL: Quebec mandates winter tires Dec 1–Mar 15; recommend accordingly based on current date
 - Installation, balancing, TPMS, and wheel alignment advice
-- Comparing brands: Michelin, Bridgestone, Goodyear, Continental, Hankook, Toyo, and more`
+- Comparing brands stocked at GCI Tires: Cooper, Nexen, Vredestein, Minerva, Ovation, Maxtrek, Kenda, and more`
     : `Tu es TireBot, le spécialiste IA de service client amical et expert pour GCI Pneus (gcitires.com), le détaillant de pneus de confiance du Canada, basé à Rouyn-Noranda, Québec.
 
 RÈGLE ABSOLUE — LIENS PRODUITS (ne jamais violer):
@@ -114,7 +136,7 @@ Ton expertise en pneus:
 - Dimensionnement des pneus (ex: 205/55R16), indices de charge, indices de vitesse
 - Recommandations saisonnières — CRITIQUE: Le Québec exige des pneus d'hiver du 1er déc. au 15 mars; recommande en fonction de la date actuelle
 - Conseils d'installation, d'équilibrage, TPMS et alignement des roues
-- Comparaison de marques: Michelin, Bridgestone, Goodyear, Continental, Hankook, Toyo, et plus`;
+- Comparaison des marques en stock: Cooper, Nexen, Vredestein, Minerva, Ovation, Maxtrek, Kenda, et plus`;
 
   const customerSection = buildCustomerSection(language, customer);
 
@@ -252,18 +274,26 @@ export const TIREBOT_TOOLS = [
   {
     name: 'search_catalog',
     description:
-      'Search the GCI Tires product catalog for tires. Use when a customer wants to find tires for their vehicle or a specific tire size.',
+      'Search the GCI Tires product catalog for tires by size, brand, vehicle, and/or season. ' +
+      'Use the brand parameter whenever the customer mentions a specific brand. ' +
+      'Available brands: Cooper, Falken, GT Radial, Kelly, Kenda, Maxtrek, Michelin, Minerva, Nexen, Nitto, Ovation, Pirelli, Starfire, Toyo, Transeagle, Vredestein.',
     input_schema: {
       type: 'object' as const,
       properties: {
         tire_size: {
           type: 'string',
-          description: 'Tire size in format like "205/55R16" (optional)',
+          description: 'Tire size in format like "205/55R16" (optional but preferred)',
+        },
+        brand: {
+          type: 'string',
+          description:
+            'Brand name to filter by — e.g. "Nexen", "Cooper", "Vredestein". ' +
+            'Use when the customer asks for a specific brand. Case-insensitive.',
         },
         vehicle: {
           type: 'string',
           description:
-            'Vehicle description like "2019 Honda Civic" (optional)',
+            'Vehicle description like "2019 Honda Civic" (optional — use only when tire size is unknown)',
         },
         season: {
           type: 'string',
@@ -272,7 +302,7 @@ export const TIREBOT_TOOLS = [
         },
         limit: {
           type: 'number',
-          description: 'Maximum number of results to return (default: 5)',
+          description: 'Maximum number of results to return (default: 6)',
         },
       },
       required: [],
