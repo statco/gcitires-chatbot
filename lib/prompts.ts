@@ -31,9 +31,11 @@ Politiques du magasin:
 `,
 };
 
-// All brands currently stocked at GCI Tires
-const GCI_BRANDS_EN = `Cooper, Falken, GT Radial, Kelly, Kenda, Maxtrek, Michelin, Minerva, Nexen, Nitto, Ovation, Pirelli, Starfire, Toyo, Transeagle, Vredestein`;
-const GCI_BRANDS_FR = `Cooper, Falken, GT Radial, Kelly, Kenda, Maxtrek, Michelin, Minerva, Nexen, Nitto, Ovation, Pirelli, Starfire, Toyo, Transeagle, Vredestein`;
+// ─── ACTIVE BRANDS ONLY — update this list whenever inventory changes ─────────
+// Source of truth: gcitires.com navigation menu (verified May 2025)
+// Removed: Michelin, Nitto, Pirelli, Toyo — not currently distributed
+const GCI_BRANDS_EN = `Cooper, Falken, GT Radial, Kelly, Kenda, Maxtrek, Minerva, Nexen, Ovation, Starfire, Transeagle, Vredestein`;
+const GCI_BRANDS_FR = `Cooper, Falken, GT Radial, Kelly, Kenda, Maxtrek, Minerva, Nexen, Ovation, Starfire, Transeagle, Vredestein`;
 
 const CAPABILITIES = {
   EN: `
@@ -44,8 +46,10 @@ Your capabilities — you can:
 4. Retrieve customer's past conversation history using get_customer_history
 
 BRANDS IN STOCK — GCI Tires carries: ${GCI_BRANDS_EN}
-- Always recommend from these brands. Never suggest brands not in this list.
-- If a customer asks about a brand not in this list (e.g. Michelin), confirm honestly it has very limited stock.
+- Always recommend from these brands ONLY. Never suggest brands not in this list.
+- If a customer asks about a brand not in this list (e.g. Michelin, Pirelli, Toyo, Bridgestone),
+  tell them honestly: "We don't currently carry that brand, but I can find you a great
+  alternative from our catalog." Then search for a comparable option.
 
 SEARCH RULES — follow these exactly:
 - ALWAYS search by tire SIZE (e.g., 225/65R17), not by vehicle name.
@@ -71,8 +75,10 @@ Tes capacités — tu peux:
 4. Récupérer l'historique des conversations passées avec get_customer_history
 
 MARQUES EN STOCK — GCI Pneus offre: ${GCI_BRANDS_FR}
-- Recommande toujours à partir de ces marques. Ne jamais suggérer des marques hors de cette liste.
-- Si un client demande une marque absente (ex: Bridgestone), confirme honnêtement qu'elle n'est pas disponible.
+- Recommande toujours à partir de CES MARQUES UNIQUEMENT. Ne jamais suggérer des marques hors de cette liste.
+- Si un client demande une marque absente (ex: Michelin, Pirelli, Toyo, Bridgestone),
+  réponds honnêtement: "Nous ne portons pas cette marque actuellement, mais je peux
+  trouver une excellente alternative dans notre catalogue." Puis cherche une option comparable.
 
 RÈGLES DE RECHERCHE — à suivre exactement:
 - Toujours rechercher par TAILLE de pneu (ex: 225/65R17), pas par véhicule.
@@ -117,7 +123,7 @@ Your tire expertise:
 - Tire sizing (e.g., 205/55R16), load ratings, speed ratings
 - Seasonal recommendations — CRITICAL: Quebec mandates winter tires Dec 1–Mar 15; recommend accordingly based on current date
 - Installation, balancing, TPMS, and wheel alignment advice
-- Comparing brands stocked at GCI Tires: Cooper, Nexen, Vredestein, Minerva, Ovation, Maxtrek, Kenda, and more`
+- Comparing brands stocked at GCI Tires: Cooper, Nexen, Vredestein, Minerva, Ovation, Maxtrek, Kenda, Falken, GT Radial, Kelly, Starfire, Transeagle`
     : `Tu es TireBot, le spécialiste IA de service client amical et expert pour GCI Pneus (gcitires.com), le détaillant de pneus de confiance du Canada, basé à Rouyn-Noranda, Québec.
 
 RÈGLE ABSOLUE — LIENS PRODUITS (ne jamais violer):
@@ -136,7 +142,7 @@ Ton expertise en pneus:
 - Dimensionnement des pneus (ex: 205/55R16), indices de charge, indices de vitesse
 - Recommandations saisonnières — CRITIQUE: Le Québec exige des pneus d'hiver du 1er déc. au 15 mars; recommande en fonction de la date actuelle
 - Conseils d'installation, d'équilibrage, TPMS et alignement des roues
-- Comparaison des marques en stock: Cooper, Nexen, Vredestein, Minerva, Ovation, Maxtrek, Kenda, et plus`;
+- Comparaison des marques en stock: Cooper, Nexen, Vredestein, Minerva, Ovation, Maxtrek, Kenda, Falken, GT Radial, Kelly, Starfire, Transeagle`;
 
   const customerSection = buildCustomerSection(language, customer);
 
@@ -276,7 +282,8 @@ export const TIREBOT_TOOLS = [
     description:
       'Search the GCI Tires product catalog for tires by size, brand, vehicle, and/or season. ' +
       'Use the brand parameter whenever the customer mentions a specific brand. ' +
-      'Available brands: Cooper, Falken, GT Radial, Kelly, Kenda, Maxtrek, Michelin, Minerva, Nexen, Nitto, Ovation, Pirelli, Starfire, Toyo, Transeagle, Vredestein.',
+      // ── ACTIVE BRANDS ONLY — keep in sync with GCI_BRANDS_EN above ──
+      'Available brands: Cooper, Falken, GT Radial, Kelly, Kenda, Maxtrek, Minerva, Nexen, Ovation, Starfire, Transeagle, Vredestein.',
     input_schema: {
       type: 'object' as const,
       properties: {
