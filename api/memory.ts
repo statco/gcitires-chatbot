@@ -12,7 +12,7 @@ export const config = {
 };
 
 const ALLOWED_ORIGINS = (
-  process.env.WIDGET_ALLOWED_ORIGINS || 'https://gcitires.com'
+  process.env.WIDGET_ALLOWED_ORIGINS || 'https://gcitirescanada.com,https://gcitires.com'
 )
   .split(',')
   .map((o) => o.trim());
