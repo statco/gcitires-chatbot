@@ -5,15 +5,26 @@ export const config = {
 };
 
 const ALLOWED_ORIGINS = (
-  process.env.WIDGET_ALLOWED_ORIGINS || 'https://gcitires.com'
+  process.env.WIDGET_ALLOWED_ORIGINS || 'https://gcitirescanada.com,https://www.gcitirescanada.com,https://gcitires.com,https://www.gcitires.com,https://gcitires.ca,https://www.gcitires.ca,https://gcitires-ca.myshopify.com'
 )
   .split(',')
   .map((o) => o.trim());
 
+function isOriginAllowed(origin: string): boolean {
+  if (!origin) return false;
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  try {
+    const reqHost = new URL(origin).hostname.replace(/^www\./, '');
+    return ALLOWED_ORIGINS.some((o) => {
+      try { return new URL(o).hostname.replace(/^www\./, '') === reqHost; } catch { return false; }
+    });
+  } catch { return false; }
+}
+
 function setCorsHeaders(req: VercelRequest, res: VercelResponse): void {
   const origin = req.headers.origin || '';
   const allowed =
-    ALLOWED_ORIGINS.includes(origin) ||
+    isOriginAllowed(origin) ||
     process.env.VERCEL_ENV === 'development' ||
     origin.includes('localhost') ||
     origin.includes('vercel.app');
