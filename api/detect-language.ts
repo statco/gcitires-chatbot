@@ -5,7 +5,7 @@ export const config = {
 };
 
 const ALLOWED_ORIGINS = (
-  process.env.WIDGET_ALLOWED_ORIGINS || 'https://gcitirescanada.com,https://gcitires.com'
+  process.env.WIDGET_ALLOWED_ORIGINS || 'https://gcitirescanada.com,https://www.gcitirescanada.com,https://gcitires.com,https://www.gcitires.com,https://gcitires.ca,https://www.gcitires.ca'
 )
   .split(',')
   .map((o) => o.trim());
