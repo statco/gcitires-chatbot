@@ -1,6 +1,6 @@
 # GCI Tires — TireBot Bilingual Chatbot
 
-Production-ready bilingual (English/French) AI customer service chatbot for [gcitires.com](https://gcitires.com), powered by Claude claude-sonnet-4-6, deployed on Vercel, embedded in Shopify.
+Production-ready bilingual (English/French) AI customer service chatbot for [gcitirescanada.com](https://gcitirescanada.com), powered by Claude claude-sonnet-4-6, deployed on Vercel, embedded in Shopify.
 
 ---
 
@@ -109,14 +109,14 @@ vercel link
 
 # Set all environment variables
 vercel env add ANTHROPIC_API_KEY
-vercel env add SHOPIFY_STORE_DOMAIN        # gcitires.myshopify.com
+vercel env add SHOPIFY_STORE_DOMAIN        # gcitires-ca.myshopify.com
 vercel env add SHOPIFY_ADMIN_API_TOKEN     # shpat_...
 vercel env add SHOPIFY_API_VERSION         # 2024-01
 vercel env add AIRTABLE_API_KEY            # pat...
 vercel env add AIRTABLE_BASE_ID            # appXXXXXXXX
 vercel env add AIRTABLE_CUSTOMERS_TABLE    # Customers
 vercel env add AIRTABLE_CONVERSATIONS_TABLE # Conversations
-vercel env add WIDGET_ALLOWED_ORIGINS      # https://gcitires.com
+vercel env add WIDGET_ALLOWED_ORIGINS      # https://gcitirescanada.com,https://www.gcitirescanada.com,https://gcitires.com,https://www.gcitires.com,https://gcitires.ca,https://www.gcitires.ca,https://gcitires-ca.myshopify.com
 
 # Deploy to production
 vercel --prod
@@ -147,7 +147,7 @@ Output: `widget/dist/tirebot-widget.iife.js` — self-contained, single-file bun
 1. Shopify Admin → Online Store → Themes → **Edit code**
 2. Under **Snippets** → **Add a new snippet** → name it `tirebot-snippet`
 3. Paste the contents of `shopify/tirebot-snippet.liquid`
-4. Replace `YOUR_VERCEL_DEPLOYMENT_URL` with your actual Vercel URL
+4. Replace `gcitires-chatbot.vercel.app` with your actual Vercel URL
 5. Open `layout/theme.liquid`
 6. Add just before `</body>`:
    ```liquid
@@ -169,10 +169,10 @@ Add this block just before `</body>` in `layout/theme.liquid`:
   };
 </script>
 <script
-  src="https://YOUR_VERCEL_DEPLOYMENT_URL/tirebot-widget.iife.js"
+  src="https://gcitires-chatbot.vercel.app/tirebot-widget.iife.js"
   defer
   crossorigin="anonymous"
-  data-api-endpoint="https://YOUR_VERCEL_DEPLOYMENT_URL"
+  data-api-endpoint="https://gcitires-chatbot.vercel.app"
   data-store-domain="{{ shop.permanent_domain | escape }}"
 ></script>
 ```
@@ -190,7 +190,7 @@ Add this block just before `</body>` in `layout/theme.liquid`:
 - [ ] `POST /api/order` with valid order number + email → returns order data
 - [ ] `POST /api/memory` `{"action":"upsert_customer",...}` → creates Airtable record
 - [ ] `GET /api/memory?action=customer&customerId=xxx` → returns customer data
-- [ ] CORS: requests from non-gcitires.com origin → rejected
+- [ ] CORS: requests from unlisted origins → rejected; all active GCI domains accepted
 
 ### Widget UI Tests
 
@@ -222,11 +222,13 @@ Add this block just before `</body>` in `layout/theme.liquid`:
 | Variable | Description | Example |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | Anthropic API key | `sk-ant-...` |
-| `SHOPIFY_STORE_DOMAIN` | Shopify myshopify domain | `gcitires.myshopify.com` |
+| `SHOPIFY_STORE_DOMAIN` | Shopify myshopify domain | `gcitires-ca.myshopify.com` |
 | `SHOPIFY_ADMIN_API_TOKEN` | Shopify Admin API token | `shpat_...` |
 | `SHOPIFY_API_VERSION` | Shopify API version | `2024-01` |
 | `AIRTABLE_API_KEY` | Airtable Personal Access Token | `pat...` |
 | `AIRTABLE_BASE_ID` | Airtable base identifier | `appXXXXXXXX` |
 | `AIRTABLE_CUSTOMERS_TABLE` | Customers table name | `Customers` |
 | `AIRTABLE_CONVERSATIONS_TABLE` | Conversations table name | `Conversations` |
-| `WIDGET_ALLOWED_ORIGINS` | Comma-separated allowed origins | `https://gcitires.com` |
+| `WIDGET_ALLOWED_ORIGINS` | Comma-separated allowed origins | `https://gcitirescanada.com,https://www.gcitirescanada.com,https://gcitires.com,https://www.gcitires.com,https://gcitires.ca,https://www.gcitires.ca,https://gcitires-ca.myshopify.com` |
+
+> **Note:** When adding a new store domain (e.g. a new Shopify storefront or custom domain), update `WIDGET_ALLOWED_ORIGINS` in the Vercel dashboard under Project → Settings → Environment Variables. Both `www` and non-`www` variants are matched automatically, but each root domain must be listed.
