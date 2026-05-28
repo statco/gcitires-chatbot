@@ -306,7 +306,10 @@ export async function searchCatalog(params: {
       pageNum++;
       const resp = await fetch(STOREFRONT_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Storefront-Access-Token': process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN || '',
+        },
         body: JSON.stringify({
           query: STOREFRONT_QUERY,
           variables: { q: primaryQuery, after: cursor },
@@ -393,7 +396,7 @@ export async function searchCatalog(params: {
     // ── Deduplicate: keep best-priced entry per model name ───────────────────
     const seen = new Map<string, typeof products[0]>();
     for (const p of products) {
-      const modelKey = p.title.replace(/\s+\d{3}\/\d{2}R\d{2}.*$/, '').trim();
+      const modelKey = p.title.trim();
       const existing = seen.get(modelKey);
       if (!existing || (p.inStock && !existing.inStock)) {
         seen.set(modelKey, p);
