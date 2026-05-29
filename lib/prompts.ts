@@ -35,6 +35,31 @@ Politiques du magasin:
 // Source of truth: gcitires.com navigation menu (verified May 2025)
 // Removed: Michelin, Nitto, Pirelli, Toyo — not currently distributed
 const GCI_BRANDS_EN = `Cooper, Falken, GT Radial, Kelly, Kenda, Maxtrek, Minerva, Nexen, Ovation, Starfire, Transeagle, Vredestein`;
+
+const GCI_BRANDS = [
+  'Cooper','Falken','GT Radial','Kelly','Kenda','Maxtrek',
+  'Minerva','Nexen','Ovation','Starfire','Transeagle','Vredestein',
+];
+
+const STALE_NEGATIVE_PATTERNS = [
+  /does not carry/i, /don't carry/i, /doesn't carry/i,
+  /not a brand we/i, /not currently available/i, /not in.*catalog/i,
+  /not one of the brands/i, /simply not/i,
+];
+
+function stripStaleNegatives(summary: string): string {
+  return summary
+    .split('\n')
+    .map(line => {
+      const mentionsBrand = GCI_BRANDS.some(b =>
+        line.toLowerCase().includes(b.toLowerCase())
+      );
+      const hasNegative = STALE_NEGATIVE_PATTERNS.some(p => p.test(line));
+      return (mentionsBrand && hasNegative) ? null : line;
+    })
+    .filter(Boolean)
+    .join('\n');
+}
 const GCI_BRANDS_FR = `Cooper, Falken, GT Radial, Kelly, Kenda, Maxtrek, Minerva, Nexen, Ovation, Starfire, Transeagle, Vredestein`;
 
 const CAPABILITIES = {
@@ -50,6 +75,7 @@ BRANDS IN STOCK — GCI Tires Canada carries: ${GCI_BRANDS_EN}
 - If a customer asks about a brand not in this list (e.g. Michelin, Pirelli, Toyo, Bridgestone),
   tell them honestly: "We don't currently carry that brand, but I can find you a great
   alternative from our catalog." Then search for a comparable option.
+- IMPORTANT: Always call search_catalog() to verify current stock. Never rely on memory or past conversations to conclude a brand is unavailable. Past search failures may have been due to a technical error, not actual stock absence.
 
 SEARCH RULES — follow these exactly:
 - ALWAYS search by tire SIZE (e.g., 225/65R17), not by vehicle name.
@@ -235,11 +261,16 @@ function buildCustomerSection(
         );
       }
       if (prefs.pastInterests?.length) {
-        lines.push(
-          language === 'EN'
-            ? `- Past interests: ${prefs.pastInterests.join(', ')}`
-            : `- Intérêts passés: ${prefs.pastInterests.join(', ')}`
-        );
+        const cleanedInterests = prefs.pastInterests
+          .map((s: string) => stripStaleNegatives(s))
+          .filter(Boolean);
+        if (cleanedInterests.length) {
+          lines.push(
+            language === 'EN'
+              ? `- Past interests: ${cleanedInterests.join(', ')}`
+              : `- Intérêts passés: ${cleanedInterests.join(', ')}`
+          );
+        }
       }
     } catch {
       // ignore parse errors
@@ -247,11 +278,14 @@ function buildCustomerSection(
   }
 
   if (customer.recentSessionsSummary) {
-    lines.push(
-      language === 'EN'
-        ? `- Previous conversation summary: ${customer.recentSessionsSummary}`
-        : `- Résumé des conversations précédentes: ${customer.recentSessionsSummary}`
-    );
+    const cleanedSummary = stripStaleNegatives(customer.recentSessionsSummary);
+    if (cleanedSummary.trim()) {
+      lines.push(
+        language === 'EN'
+          ? `- Previous conversation summary: ${cleanedSummary}`
+          : `- Résumé des conversations précédentes: ${cleanedSummary}`
+      );
+    }
   }
 
   return lines.join('\n');
