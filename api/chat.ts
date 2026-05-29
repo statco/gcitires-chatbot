@@ -276,6 +276,7 @@ export default async function handler(
         accumulatedText += text;              // accumulate — do NOT send yet
       },
       onToolStart(toolName) {
+        console.log(`[tool_call] ${toolName}`);
         sendEvent({ type: 'tool_start', tool: toolName });
       },
       onToolResult(toolName, result) {
