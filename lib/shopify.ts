@@ -258,6 +258,7 @@ export async function searchCatalog(params: {
   `;
 
   try {
+    console.log(`[searchCatalog] called with brand=${brand} size=${tire_size}`);
     // ── Build Storefront search query ────────────────────────────────────────
     // Priority: tire_size > brand > vehicle
     // Brand searches use Shopify's `vendor:` prefix for exact matching.
