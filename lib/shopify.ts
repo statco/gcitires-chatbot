@@ -1,4 +1,4 @@
-const SHOPIFY_DOMAIN = process.env.SHOPIFY_STORE_DOMAIN || 'gcitires.myshopify.com';
+const SHOPIFY_DOMAIN = process.env.SHOPIFY_STORE_DOMAIN || 'gcitires-ca.myshopify.com';
 const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN || '';
 const SHOPIFY_VERSION = process.env.SHOPIFY_API_VERSION || '2024-01';
 
