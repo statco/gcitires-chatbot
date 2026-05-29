@@ -89,6 +89,7 @@ SEARCH RULES — follow these exactly:
     "What Vredestein tires do you have?" → search_catalog(brand:"Vredestein")
     "Which Nexen sizes do you have?" → search_catalog(brand:"Nexen")
     "Do you have Nexen tires?" → search_catalog(brand:"Nexen")
+    "Which sizes of Nexen Npriz AH5 do you have?" → search_catalog(brand:"Nexen", model:"Npriz AH5")
 - Call search_catalog with tire_size + season (summer / winter / all-season) when known
 - NEVER tell the customer there are no results before trying at least 2 size searches
 - If first size returns 0 in-stock results, try the next common size for that vehicle
@@ -326,6 +327,7 @@ export const TIREBOT_TOOLS = [
       // ── ACTIVE BRANDS ONLY — keep in sync with GCI_BRANDS_EN above ──
       'Available brands: Cooper, Falken, GT Radial, Kelly, Kenda, Maxtrek, Minerva, Nexen, Ovation, Starfire, Transeagle, Vredestein. ' +
       'Examples: ' +
+      '"Which sizes of Nexen Npriz AH5 do you have?" → search_catalog(brand:"Nexen", model:"Npriz AH5") | ' +
       '"Which Nexen sizes do you have?" → search_catalog(brand:"Nexen") | ' +
       '"Do you have Nexen tires?" → search_catalog(brand:"Nexen")',
     input_schema: {
@@ -340,6 +342,12 @@ export const TIREBOT_TOOLS = [
           description:
             'Brand name to filter by — e.g. "Nexen", "Cooper", "Vredestein". ' +
             'Use when the customer asks for a specific brand. Case-insensitive.',
+        },
+        model: {
+          type: 'string',
+          description:
+            "Tire model name to search for, e.g. 'Npriz AH5', 'Winguard Sport 2', " +
+            "'Roadian GTX'. Use when the customer mentions a specific model name.",
         },
         vehicle: {
           type: 'string',

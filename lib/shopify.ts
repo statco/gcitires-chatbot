@@ -225,10 +225,11 @@ export async function searchCatalog(params: {
   tire_size?: string;
   vehicle?: string;
   brand?: string;
+  model?: string;
   season?: string;
   limit?: number;
 }): Promise<CatalogSearchResult> {
-  const { tire_size, vehicle, brand, season, limit = 6 } = params;
+  const { tire_size, vehicle, brand, model, season, limit = 6 } = params;
 
   // ── Storefront GraphQL ────────────────────────────────────────────────────
   const STOREFRONT_URL = `https://${SHOPIFY_DOMAIN}/api/2024-01/graphql.json`;
@@ -258,21 +259,27 @@ export async function searchCatalog(params: {
   `;
 
   try {
-    console.log(`[searchCatalog] called with brand=${brand} size=${tire_size}`);
+    console.log(`[searchCatalog] called with brand=${brand} model=${model} size=${tire_size}`);
     // ── Build Storefront search query ────────────────────────────────────────
-    // Priority: tire_size > brand > vehicle
-    // Brand searches use Shopify's `vendor:` prefix for exact matching.
-    // Size searches use full-text (most accurate for SKU-style strings).
-    // Combined brand+size: run both and intersect client-side.
+    // Priority: tire_size+model > tire_size+brand > tire_size > brand+model > model > brand > vehicle
     let primaryQuery = '';
     let brandFilter: string | null = null;
 
-    if (tire_size && brand) {
-      // Both supplied — search by size, filter by vendor client-side
+    if (tire_size && model) {
+      // Size + model: include model in full-text query for exact product match
+      primaryQuery = `${tire_size.trim()} ${model.trim()}`;
+      if (brand) brandFilter = normaliseBrand(brand);
+    } else if (tire_size && brand) {
+      // Size + brand: search by size, filter by vendor client-side
       primaryQuery = tire_size.trim();
       brandFilter = normaliseBrand(brand);
     } else if (tire_size) {
       primaryQuery = tire_size.trim();
+    } else if (brand && model) {
+      brandFilter = normaliseBrand(brand);
+      primaryQuery = `${model.trim()} vendor:"${brandFilter}"`;
+    } else if (model) {
+      primaryQuery = model.trim();
     } else if (brand) {
       // Brand-only search — use Shopify vendor: operator for precision
       brandFilter = normaliseBrand(brand);
