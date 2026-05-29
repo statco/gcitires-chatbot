@@ -87,6 +87,8 @@ SEARCH RULES — follow these exactly:
     "I want Nexen tires in 205/55R16" → search_catalog(tire_size:"205/55R16", brand:"Nexen", season:...)
     "Show me all Cooper winter tires" → search_catalog(brand:"Cooper", season:"winter")
     "What Vredestein tires do you have?" → search_catalog(brand:"Vredestein")
+    "Which Nexen sizes do you have?" → search_catalog(brand:"Nexen")
+    "Do you have Nexen tires?" → search_catalog(brand:"Nexen")
 - Call search_catalog with tire_size + season (summer / winter / all-season) when known
 - NEVER tell the customer there are no results before trying at least 2 size searches
 - If first size returns 0 in-stock results, try the next common size for that vehicle
@@ -314,10 +316,18 @@ export const TIREBOT_TOOLS = [
   {
     name: 'search_catalog',
     description:
+      'MANDATORY RULE: For ANY question about tire availability, stock, sizes, ' +
+      'or brands — you MUST call search_catalog() FIRST before responding. ' +
+      'Never answer availability questions from memory or training data. ' +
+      'Even if you believe you know the answer, ALWAYS call search_catalog() ' +
+      'first. A search that returns results overrides any prior knowledge. ' +
       'Search the GCI Tires Canada product catalog for tires by size, brand, vehicle, and/or season. ' +
       'Use the brand parameter whenever the customer mentions a specific brand. ' +
       // ── ACTIVE BRANDS ONLY — keep in sync with GCI_BRANDS_EN above ──
-      'Available brands: Cooper, Falken, GT Radial, Kelly, Kenda, Maxtrek, Minerva, Nexen, Ovation, Starfire, Transeagle, Vredestein.',
+      'Available brands: Cooper, Falken, GT Radial, Kelly, Kenda, Maxtrek, Minerva, Nexen, Ovation, Starfire, Transeagle, Vredestein. ' +
+      'Examples: ' +
+      '"Which Nexen sizes do you have?" → search_catalog(brand:"Nexen") | ' +
+      '"Do you have Nexen tires?" → search_catalog(brand:"Nexen")',
     input_schema: {
       type: 'object' as const,
       properties: {
