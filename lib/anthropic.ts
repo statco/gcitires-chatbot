@@ -34,7 +34,7 @@ export async function streamChat(options: StreamChatOptions): Promise<void> {
       max_tokens: MAX_TOKENS,
       system: systemPrompt,
       messages: currentMessages,
-      ...(hasTools ? { tools } : {}),
+      ...(hasTools ? { tools, tool_choice: { type: 'any' } } : {}),
     });
     // ✅ Correct streaming syntax
     for await (const event of stream) {
