@@ -181,6 +181,8 @@ export default async function handler(
         case 'search_catalog': {
           return searchCatalog({
             tire_size: input.tire_size as string | undefined,
+            brand: input.brand as string | undefined,
+            model: input.model as string | undefined,
             vehicle: input.vehicle as string | undefined,
             season: input.season as string | undefined,
             limit: (input.limit as number | undefined) || 5,
@@ -234,7 +236,7 @@ export default async function handler(
       }
     }
 
-    // ── Link fixup: accumulated post-processing ──────────────────────────────
+    // ── Link fixup: accumulated post-processing ────────────────────────────────────────
     // Claude consistently wraps product links in __bold__ causing malformed hrefs
     // and 404s. We accumulate the full response, strip the __wrapper__, then re-emit
     // the corrected text so the widget never sees a broken link.

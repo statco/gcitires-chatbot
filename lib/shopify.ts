@@ -261,15 +261,16 @@ export async function searchCatalog(params: {
   try {
     console.log(`[searchCatalog] called with brand=${brand} model=${model} size=${tire_size}`);
     // ── Build Storefront search query ────────────────────────────────────────
-    // Priority: tire_size > brand+model > model > brand > vehicle
-    // Brand searches use Shopify's `vendor:` prefix for exact matching.
-    // Size searches use full-text (most accurate for SKU-style strings).
-    // Combined brand+size: run both and intersect client-side.
+    // Priority: tire_size+model > tire_size+brand > tire_size > brand+model > model > brand > vehicle
     let primaryQuery = '';
     let brandFilter: string | null = null;
 
-    if (tire_size && brand) {
-      // Both supplied — search by size, filter by vendor client-side
+    if (tire_size && model) {
+      // Size + model: include model in full-text query for exact product match
+      primaryQuery = `${tire_size.trim()} ${model.trim()}`;
+      if (brand) brandFilter = normaliseBrand(brand);
+    } else if (tire_size && brand) {
+      // Size + brand: search by size, filter by vendor client-side
       primaryQuery = tire_size.trim();
       brandFilter = normaliseBrand(brand);
     } else if (tire_size) {
