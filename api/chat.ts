@@ -8,7 +8,7 @@ import {
   upsertCustomer,
   getRecentSessions,
   saveConversation,
-} from '../lib/airtable';
+} from '../lib/supabase';
 
 export const config = {
   maxDuration: 30,

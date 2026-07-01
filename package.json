@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.3",
-    "airtable": "^0.12.2",
+    "@supabase/supabase-js": "^2.110.0",
     "franc-min": "^6.2.0"
   },
   "devDependencies": {
