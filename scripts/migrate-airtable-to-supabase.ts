@@ -77,6 +77,19 @@ async function fetchAllRecords(tableName: string): Promise<AirtableRecord[]> {
   return all;
 }
 
+function buildCustomerRow(r: AirtableRecord, customerId: string) {
+  return {
+    customer_id: customerId,
+    email: r.fields.email || null,
+    name: r.fields.name || null,
+    language_preference: r.fields.language_preference?.name || r.fields.language_preference || null,
+    vehicle_info: r.fields.vehicle_info || null,
+    tire_preferences: r.fields.tire_preferences || null,
+    last_seen: r.fields.last_seen || null,
+    total_sessions: r.fields.total_sessions ?? 0,
+  };
+}
+
 async function migrateCustomers(): Promise<Map<string, boolean>> {
   console.log(`\nFetching all records from "${CUSTOMERS_TABLE}"...`);
   const records = await fetchAllRecords(CUSTOMERS_TABLE);
@@ -87,23 +100,19 @@ async function migrateCustomers(): Promise<Map<string, boolean>> {
 
   for (let i = 0; i < records.length; i += BATCH_SIZE) {
     const batch = records.slice(i, i + BATCH_SIZE);
-    const rows = batch
-      .map((r) => {
-        const customerId = r.fields.customer_id;
-        if (!customerId) return null; // skip malformed records rather than fail the whole batch
-        seenCustomerIds.set(customerId, true);
-        return {
-          customer_id: customerId,
-          email: r.fields.email || null,
-          name: r.fields.name || null,
-          language_preference: r.fields.language_preference?.name || r.fields.language_preference || null,
-          vehicle_info: r.fields.vehicle_info || null,
-          tire_preferences: r.fields.tire_preferences || null,
-          last_seen: r.fields.last_seen || null,
-          total_sessions: r.fields.total_sessions ?? 0,
-        };
-      })
-      .filter((r): r is NonNullable<typeof r> => r !== null);
+    const rowsByCustomerId = new Map<string, ReturnType<typeof buildCustomerRow>>();
+
+    for (const r of batch) {
+      const customerId = r.fields.customer_id;
+      if (!customerId) continue; // skip malformed records rather than fail the whole batch
+      seenCustomerIds.set(customerId, true);
+      // Postgres upsert can't affect the same conflict-target row twice in
+      // one statement -- if Airtable has duplicate customer_id records
+      // (confirmed: it does, at least one batch's worth), last one in the
+      // batch wins here rather than the whole 500-row batch failing.
+      rowsByCustomerId.set(customerId, buildCustomerRow(r, customerId));
+    }
+    const rows = Array.from(rowsByCustomerId.values());
 
     const { error } = await supabase.from('chatbot_customers').upsert(rows, { onConflict: 'customer_id' });
     if (error) {
@@ -117,6 +126,24 @@ async function migrateCustomers(): Promise<Map<string, boolean>> {
   return seenCustomerIds;
 }
 
+function buildConversationRow(r: AirtableRecord, sessionId: string, customerId: string | undefined) {
+  let messages: unknown = [];
+  try {
+    messages = typeof r.fields.messages === 'string' ? JSON.parse(r.fields.messages) : (r.fields.messages || []);
+  } catch {
+    messages = [];
+  }
+  return {
+    session_id: sessionId,
+    customer_id: customerId || null,
+    messages,
+    language: r.fields.language?.name || r.fields.language || null,
+    resolved: !!r.fields.resolved,
+    created_at: r.fields.created_at || null,
+    updated_at: r.fields.updated_at || null,
+  };
+}
+
 async function migrateConversations(validCustomerIds: Map<string, boolean>): Promise<void> {
   console.log(`\nFetching all records from "${CONVERSATIONS_TABLE}"...`);
   const records = await fetchAllRecords(CONVERSATIONS_TABLE);
@@ -127,36 +154,25 @@ async function migrateConversations(validCustomerIds: Map<string, boolean>): Pro
 
   for (let i = 0; i < records.length; i += BATCH_SIZE) {
     const batch = records.slice(i, i + BATCH_SIZE);
-    const rows = batch
-      .map((r) => {
-        const sessionId = r.fields.session_id;
-        const customerId = r.fields.customer_id;
-        if (!sessionId) return null;
-        // FK constraint: chatbot_conversations.customer_id references
-        // chatbot_customers.customer_id. If a conversation references a
-        // customer that wasn't migrated (shouldn't happen, but data can be
-        // messy), skip it rather than fail the whole batch.
-        if (customerId && !validCustomerIds.has(customerId)) {
-          skippedOrphans++;
-          return null;
-        }
-        let messages: unknown = [];
-        try {
-          messages = typeof r.fields.messages === 'string' ? JSON.parse(r.fields.messages) : (r.fields.messages || []);
-        } catch {
-          messages = [];
-        }
-        return {
-          session_id: sessionId,
-          customer_id: customerId || null,
-          messages,
-          language: r.fields.language?.name || r.fields.language || null,
-          resolved: !!r.fields.resolved,
-          created_at: r.fields.created_at || null,
-          updated_at: r.fields.updated_at || null,
-        };
-      })
-      .filter((r): r is NonNullable<typeof r> => r !== null);
+    const rowsBySessionId = new Map<string, ReturnType<typeof buildConversationRow>>();
+
+    for (const r of batch) {
+      const sessionId = r.fields.session_id;
+      const customerId = r.fields.customer_id;
+      if (!sessionId) continue;
+      // FK constraint: chatbot_conversations.customer_id references
+      // chatbot_customers.customer_id. If a conversation references a
+      // customer that wasn't migrated (shouldn't happen, but data can be
+      // messy), skip it rather than fail the whole batch.
+      if (customerId && !validCustomerIds.has(customerId)) {
+        skippedOrphans++;
+        continue;
+      }
+      // Same duplicate-key issue as migrateCustomers() -- last one in the
+      // batch wins rather than the whole batch failing.
+      rowsBySessionId.set(sessionId, buildConversationRow(r, sessionId, customerId));
+    }
+    const rows = Array.from(rowsBySessionId.values());
 
     const { error } = await supabase.from('chatbot_conversations').upsert(rows, { onConflict: 'session_id' });
     if (error) {
