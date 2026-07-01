@@ -5,10 +5,15 @@ import {
   getConversation,
   saveConversation,
   getRecentSessions,
-} from '../lib/airtable';
+} from '../lib/supabase';
 
+// FIXED 2026-07: was 15, and Airtable regularly couldn't respond in time
+// (262 timeouts / 4 months, 101 distinct customers). Postgres queries here
+// are single-row lookups by unique key on small tables -- should return in
+// well under a second. Keeping a real (not razor-thin) ceiling rather than
+// assuming Postgres is infinitely fast.
 export const config = {
-  maxDuration: 15,
+  maxDuration: 10,
 };
 
 const ALLOWED_ORIGINS = (
