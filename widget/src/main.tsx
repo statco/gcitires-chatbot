@@ -36,8 +36,16 @@ function mountWidget(config: WidgetConfig): void {
   );
 }
 
-// Expose global API for theme.liquid to call
-window.GCITiresWidget = { init: mountWidget };
+// Expose global API for theme.liquid (or any other page script) to call.
+// open/close/toggle dispatch custom events that ChatWidget listens for —
+// this lets the Shopify theme open TireBot from a link/button anywhere
+// on the site without depending on internal DOM structure or class names.
+window.GCITiresWidget = {
+  init: mountWidget,
+  open: () => window.dispatchEvent(new CustomEvent('gci-tirebot:open')),
+  close: () => window.dispatchEvent(new CustomEvent('gci-tirebot:close')),
+  toggle: () => window.dispatchEvent(new CustomEvent('gci-tirebot:toggle')),
+};
 
 // Auto-init if config is already on the page
 // (supports both explicit init and auto-init via data attributes)

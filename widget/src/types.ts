@@ -97,6 +97,9 @@ declare global {
     GCICustomer?: CustomerInfo;
     GCITiresWidget?: {
       init: (config: WidgetConfig) => void;
+      open: () => void;
+      close: () => void;
+      toggle: () => void;
     };
   }
 }
